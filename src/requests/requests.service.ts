@@ -74,4 +74,12 @@ export class RequestsService {
   async reject(id: string): Promise<TripRequest> {
     return this.updateStatus(id, 'rejected');
   }
+
+  async deleteRequest(id: string): Promise<void> {
+    const req = await this.findOne(id);
+    if (req.status === 'pending') {
+      throw new BadRequestException('Cannot delete a pending request. Approve or reject it first.');
+    }
+    await this.repo.delete(id);
+  }
 }

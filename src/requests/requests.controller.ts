@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Patch, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, HttpCode, UseGuards } from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { TripRequest } from './trip-request.entity';
 import { JwtAuthGuard } from '../auth/jwt.guard';
@@ -43,5 +43,12 @@ export class RequestsController {
   @Put(':id/reject')
   reject(@Param('id') id: string): Promise<TripRequest> {
     return this.requestsService.reject(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id')
+  @HttpCode(204)
+  deleteRequest(@Param('id') id: string): Promise<void> {
+    return this.requestsService.deleteRequest(id);
   }
 }
