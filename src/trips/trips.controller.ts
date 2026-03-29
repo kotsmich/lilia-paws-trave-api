@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, HttpCode, UseGuards } from '@nestjs/common';
 import { TripsService } from './trips.service';
 import { Trip } from './trip.entity';
+import { JwtAuthGuard } from '../auth/jwt.guard';
 
 @Controller('trips')
 export class TripsController {
@@ -16,16 +17,19 @@ export class TripsController {
     return this.tripsService.findOne(id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   create(@Body() body: Partial<Trip>): Promise<Trip> {
     return this.tripsService.create(body);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Put(':id')
   update(@Param('id') id: string, @Body() body: Partial<Trip>): Promise<Trip> {
     return this.tripsService.update(id, body);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   @HttpCode(204)
   async remove(@Param('id') id: string): Promise<void> {

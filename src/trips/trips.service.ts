@@ -8,11 +8,11 @@ export class TripsService {
   constructor(@InjectRepository(Trip) private repo: Repository<Trip>) {}
 
   findAll(): Promise<Trip[]> {
-    return this.repo.find();
+    return this.repo.find({ relations: ['dogs'] });
   }
 
   async findOne(id: string): Promise<Trip> {
-    const trip = await this.repo.findOne({ where: { id } });
+    const trip = await this.repo.findOne({ where: { id }, relations: ['dogs', 'requests'] });
     if (!trip) throw new NotFoundException('Trip not found');
     return trip;
   }

@@ -34,7 +34,7 @@ export class Trip {
   @Column({ default: 0 })
   spotsAvailable: number;
 
-  @OneToMany(() => Dog, (dog) => dog.trip, { cascade: true, eager: true })
+  @OneToMany(() => Dog, (dog) => dog.trip, { cascade: true })
   dogs: Dog[];
 
   @OneToMany(() => TripRequest, (req) => req.trip)

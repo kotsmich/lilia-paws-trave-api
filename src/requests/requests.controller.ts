@@ -1,16 +1,19 @@
-import { Controller, Get, Post, Put, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Body, Param, UseGuards } from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { TripRequest } from './trip-request.entity';
+import { JwtAuthGuard } from '../auth/jwt.guard';
 
 @Controller('requests')
 export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Get()
   findAll(): Promise<TripRequest[]> {
     return this.requestsService.findAll();
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   findOne(@Param('id') id: string): Promise<TripRequest> {
     return this.requestsService.findOne(id);
@@ -21,11 +24,22 @@ export class RequestsController {
     return this.requestsService.create(body);
   }
 
-  @Put(':id/approve')
-  approve(@Param('id') id: string): Promise<TripRequest> {
-    return this.requestsService.approve(id);
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id') id: string,
+    @Body() body: { status: TripRequest['status'] },
+  ): Promise<TripRequest> {
+    return this.requestsService.updateStatus(id, body.status);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/approve')
+  approveRequest(@Param('id') id: string) {
+    return this.requestsService.approveRequest(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Put(':id/reject')
   reject(@Param('id') id: string): Promise<TripRequest> {
     return this.requestsService.reject(id);
