@@ -25,6 +25,13 @@ export class TripsService {
   async update(id: string, data: Partial<Trip>): Promise<Trip> {
     const trip = await this.findOne(id);
     Object.assign(trip, data);
+    // When dogs reach capacity, auto-lock and prevent manual override
+    // When below capacity, respect admin's manual isFull choice
+    const dogsCount = Array.isArray(trip.dogs) ? trip.dogs.length : 0;
+    if (dogsCount >= trip.totalCapacity) {
+      trip.isFull = true;
+    }
+    trip.spotsAvailable = Math.max(0, trip.totalCapacity - dogsCount);
     return this.repo.save(trip);
   }
 

@@ -31,8 +31,8 @@ export class TripsController {
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  @HttpCode(204)
-  async remove(@Param('id') id: string): Promise<void> {
-    return this.tripsService.remove(id);
+  async remove(@Param('id') id: string): Promise<{ id: string }> {
+    await this.tripsService.remove(id);
+    return { id };
   }
 }

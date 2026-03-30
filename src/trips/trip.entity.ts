@@ -34,6 +34,12 @@ export class Trip {
   @Column({ default: 0 })
   spotsAvailable: number;
 
+  @Column({ default: false })
+  isFull: boolean;
+
+  @Column({ default: true })
+  acceptingRequests: boolean;
+
   @OneToMany(() => Dog, (dog) => dog.trip, { cascade: true })
   dogs: Dog[];
 

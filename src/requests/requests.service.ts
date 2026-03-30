@@ -64,6 +64,10 @@ export class RequestsService {
     // Reload trip with its updated dogs
     const updatedTrip = await this.tripRepo.findOneOrFail({ where: { id: trip.id }, relations: ['dogs'] });
 
+    if (updatedTrip.dogs.length >= updatedTrip.totalCapacity) {
+      await this.tripRepo.update(trip.id, { isFull: true, spotsAvailable: 0 });
+    }
+
     // Mark request as approved
     req.status = 'approved';
     const savedReq = await this.repo.save(req);
