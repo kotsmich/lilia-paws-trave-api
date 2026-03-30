@@ -27,6 +27,11 @@ export class TripsService {
     return this.repo.save(trip);
   }
 
+  /** Broadcast the current trip list to all WebSocket clients after a create. */
+  async broadcastAfterCreate(): Promise<void> {
+    await this.tripsGateway.broadcastTrips();
+  }
+
   async update(id: string, data: Partial<Trip>): Promise<Trip> {
     const trip = await this.findOne(id);
     Object.assign(trip, data);

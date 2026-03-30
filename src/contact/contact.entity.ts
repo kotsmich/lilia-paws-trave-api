@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, DeleteDateColumn, Index } from 'typeorm';
 
 @Entity()
 export class ContactSubmission {
@@ -7,6 +7,10 @@ export class ContactSubmission {
 
   @CreateDateColumn()
   submittedAt: Date;
+
+  // Soft-delete: records are hidden from queries unless withDeleted() is used
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date | null;
 
   @Column()
   name: string;
@@ -23,6 +27,7 @@ export class ContactSubmission {
   @Column('text')
   message: string;
 
+  @Index()
   @Column({ default: false })
   isRead: boolean;
 }

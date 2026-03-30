@@ -2,6 +2,8 @@ import { Controller, Get, Post, Put, Patch, Delete, Body, Param, HttpCode, UseGu
 import { RequestsService } from './requests.service';
 import { TripRequest } from './trip-request.entity';
 import { JwtAuthGuard } from '../auth/jwt.guard';
+import { CreateTripRequestDto } from './create-trip-request.dto';
+import { UpdateStatusDto } from './update-status.dto';
 
 @Controller('requests')
 export class RequestsController {
@@ -20,7 +22,7 @@ export class RequestsController {
   }
 
   @Post()
-  create(@Body() body: Partial<TripRequest>): Promise<TripRequest> {
+  create(@Body() body: CreateTripRequestDto): Promise<TripRequest> {
     return this.requestsService.create(body);
   }
 
@@ -28,7 +30,7 @@ export class RequestsController {
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,
-    @Body() body: { status: TripRequest['status'] },
+    @Body() body: UpdateStatusDto,
   ): Promise<TripRequest> {
     return this.requestsService.updateStatus(id, body.status);
   }

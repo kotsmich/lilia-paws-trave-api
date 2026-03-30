@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, DeleteDateColumn, Index } from 'typeorm';
 import { Trip } from '../trips/trip.entity';
 
 @Entity()
@@ -9,6 +9,10 @@ export class TripRequest {
   @CreateDateColumn()
   submittedAt: Date;
 
+  // Soft-delete: records are hidden from queries unless withDeleted() is used
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date | null;
+
   @Column()
   requesterName: string;
 
@@ -18,6 +22,7 @@ export class TripRequest {
   @Column()
   requesterPhone: string;
 
+  @Index()
   @Column({ default: 'pending' })
   status: 'pending' | 'approved' | 'rejected';
 
@@ -36,6 +41,7 @@ export class TripRequest {
   @ManyToOne(() => Trip, (trip) => trip.requests, { onDelete: 'SET NULL', nullable: true })
   trip: Trip;
 
+  @Index()
   @Column({ nullable: true })
   tripId: string;
 }

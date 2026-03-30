@@ -54,7 +54,7 @@ export class ContactService {
   }
 
   async delete(id: string): Promise<{ id: string }> {
-    await this.repo.delete(id);
+    await this.repo.softDelete(id);
     return { id };
   }
 }

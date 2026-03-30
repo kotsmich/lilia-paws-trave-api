@@ -23,7 +23,9 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
 
   handleConnection(client: WebSocket): void {
-    console.log(`[AppGateway] Client connected: ${(client as any)._socket?.remoteAddress ?? 'unknown'}`);
+    // _socket is available on the underlying net.Socket but not typed in @types/ws
+    const socket = (client as WebSocket & { _socket?: { remoteAddress?: string } })._socket;
+    console.log(`[AppGateway] Client connected: ${socket?.remoteAddress ?? 'unknown'}`);
   }
 
   handleDisconnect(): void {

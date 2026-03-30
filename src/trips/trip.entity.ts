@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 import { Dog } from '../dogs/dog.entity';
 import { TripRequest } from '../requests/trip-request.entity';
 
@@ -7,6 +7,7 @@ export class Trip {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index()
   @Column()
   date: string;
 
@@ -22,6 +23,7 @@ export class Trip {
   @Column()
   arrivalCity: string;
 
+  @Index()
   @Column({ default: 'upcoming' })
   status: 'upcoming' | 'in-progress' | 'completed';
 
@@ -39,6 +41,12 @@ export class Trip {
 
   @Column({ default: true })
   acceptingRequests: boolean;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 
   @OneToMany(() => Dog, (dog) => dog.trip, { cascade: true })
   dogs: Dog[];

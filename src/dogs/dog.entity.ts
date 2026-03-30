@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, UpdateDateColumn, Index } from 'typeorm';
 import { Trip } from '../trips/trip.entity';
 
 @Entity()
@@ -15,6 +15,7 @@ export class Dog {
   @Column()
   age: number;
 
+  @Index()
   @Column()
   chipId: string;
 
@@ -26,6 +27,9 @@ export class Dog {
 
   @Column({ nullable: true })
   notes: string;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 
   @ManyToOne(() => Trip, (trip) => trip.dogs, { onDelete: 'CASCADE' })
   trip: Trip;
