@@ -1,9 +1,12 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { MailerService } from '@nestjs-modules/mailer';
 import { TripRequest } from './trip-request.entity';
 import { Trip } from '../trips/trip.entity';
 import { Dog } from '../dogs/dog.entity';
+import { AppGateway } from '../gateway/app.gateway';
+import { TripsGateway } from '../trips/trips.gateway';
 
 @Injectable()
 export class RequestsService {
@@ -11,6 +14,9 @@ export class RequestsService {
     @InjectRepository(TripRequest) private repo: Repository<TripRequest>,
     @InjectRepository(Trip) private tripRepo: Repository<Trip>,
     @InjectRepository(Dog) private dogRepo: Repository<Dog>,
+    private readonly appGateway: AppGateway,
+    private readonly tripsGateway: TripsGateway,
+    private readonly mailerService: MailerService,
   ) {}
 
   findAll(): Promise<TripRequest[]> {
@@ -25,13 +31,36 @@ export class RequestsService {
 
   async create(data: Partial<TripRequest>): Promise<TripRequest> {
     const req = this.repo.create(data);
-    return this.repo.save(req);
+    const saved = await this.repo.save(req);
+
+    this.appGateway.emitNewRequest(saved);
+
+    try {
+      await this.mailerService.sendMail({
+        to: process.env['MAIL_TO'] ?? 'liliapawstravel@gmail.com',
+        subject: `New Trip Request from ${saved.requesterName}`,
+        template: 'new-request',
+        context: {
+          requesterName: saved.requesterName,
+          requesterEmail: saved.requesterEmail,
+          requesterPhone: saved.requesterPhone,
+          dogsCount: saved.dogs?.length ?? 0,
+          submittedAt: new Date(saved.submittedAt).toLocaleString(),
+        },
+      });
+    } catch (err) {
+      console.error('Failed to send new request email:', err);
+    }
+
+    return saved;
   }
 
   async updateStatus(id: string, status: TripRequest['status']): Promise<TripRequest> {
     const req = await this.findOne(id);
     req.status = status;
-    return this.repo.save(req);
+    const saved = await this.repo.save(req);
+    this.appGateway.emitRequestStatusUpdated(saved);
+    return saved;
   }
 
   async approveRequest(id: string): Promise<{ request: TripRequest; trip: Trip }> {
@@ -71,6 +100,9 @@ export class RequestsService {
     // Mark request as approved
     req.status = 'approved';
     const savedReq = await this.repo.save(req);
+
+    this.appGateway.emitRequestStatusUpdated(savedReq);
+    await this.tripsGateway.broadcastTrips();
 
     return { request: savedReq, trip: updatedTrip };
   }

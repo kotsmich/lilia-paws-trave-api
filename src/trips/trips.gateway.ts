@@ -1,4 +1,5 @@
 import { WebSocketGateway, WebSocketServer, OnGatewayConnection } from '@nestjs/websockets';
+import { Inject, forwardRef } from '@nestjs/common';
 import { Server, WebSocket } from 'ws';
 import { TripsService } from './trips.service';
 
@@ -15,7 +16,10 @@ import { TripsService } from './trips.service';
 export class TripsGateway implements OnGatewayConnection {
   @WebSocketServer() server: Server;
 
-  constructor(private readonly tripsService: TripsService) {}
+  constructor(
+    @Inject(forwardRef(() => TripsService))
+    private readonly tripsService: TripsService,
+  ) {}
 
   async handleConnection(client: WebSocket): Promise<void> {
     const trips = await this.tripsService.findAll();

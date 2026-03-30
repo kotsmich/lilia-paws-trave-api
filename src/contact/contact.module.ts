@@ -4,7 +4,6 @@ import { ContactSubmission } from './contact.entity';
 import { ContactController } from './contact.controller';
 import { ContactAdminController } from './contact-admin.controller';
 import { ContactService } from './contact.service';
-
 @Module({
   imports: [TypeOrmModule.forFeature([ContactSubmission])],
   controllers: [ContactController, ContactAdminController],

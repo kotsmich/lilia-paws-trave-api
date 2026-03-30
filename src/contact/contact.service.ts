@@ -3,17 +3,21 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ContactSubmission } from './contact.entity';
+import { AppGateway } from '../gateway/app.gateway';
 
 @Injectable()
 export class ContactService {
   constructor(
     @InjectRepository(ContactSubmission) private repo: Repository<ContactSubmission>,
     private mailerService: MailerService,
+    private readonly appGateway: AppGateway,
   ) {}
 
   async create(data: Partial<ContactSubmission>): Promise<ContactSubmission> {
     const submission = this.repo.create(data);
     const saved = await this.repo.save(submission);
+
+    this.appGateway.emitNewMessage(saved);
 
     try {
       await this.mailerService.sendMail({

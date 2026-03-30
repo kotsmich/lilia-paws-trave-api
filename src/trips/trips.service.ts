@@ -1,11 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Trip } from './trip.entity';
+import { TripsGateway } from './trips.gateway';
 
 @Injectable()
 export class TripsService {
-  constructor(@InjectRepository(Trip) private repo: Repository<Trip>) {}
+  constructor(
+    @InjectRepository(Trip) private repo: Repository<Trip>,
+    @Inject(forwardRef(() => TripsGateway))
+    private readonly tripsGateway: TripsGateway,
+  ) {}
 
   findAll(): Promise<Trip[]> {
     return this.repo.find({ relations: ['dogs'] });
@@ -32,11 +37,14 @@ export class TripsService {
       trip.isFull = true;
     }
     trip.spotsAvailable = Math.max(0, trip.totalCapacity - dogsCount);
-    return this.repo.save(trip);
+    const saved = await this.repo.save(trip);
+    await this.tripsGateway.broadcastTrips();
+    return saved;
   }
 
   async remove(id: string): Promise<void> {
     const trip = await this.findOne(id);
     await this.repo.remove(trip);
+    await this.tripsGateway.broadcastTrips();
   }
 }

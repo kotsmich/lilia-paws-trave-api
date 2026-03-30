@@ -9,6 +9,6 @@ import { TripsGateway } from './trips.gateway';
   imports: [TypeOrmModule.forFeature([Trip])],
   controllers: [TripsController],
   providers: [TripsService, TripsGateway],
-  exports: [TripsService],
+  exports: [TripsService, TripsGateway],
 })
 export class TripsModule {}

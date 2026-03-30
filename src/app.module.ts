@@ -9,6 +9,7 @@ import { RequestsModule } from './requests/requests.module';
 import { ContactModule } from './contact/contact.module';
 import { AuthModule } from './auth/auth.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { GatewayModule } from './gateway/gateway.module';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const HandlebarsAdapter = require('@nestjs-modules/mailer/adapters/handlebars.adapter').HandlebarsAdapter;
@@ -42,6 +43,7 @@ const HandlebarsAdapter = require('@nestjs-modules/mailer/adapters/handlebars.ad
         options: { strict: true },
       },
     }),
+    GatewayModule,
     AuthModule,
     TripsModule,
     DogsModule,
