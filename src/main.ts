@@ -1,14 +1,16 @@
 import { NestFactory } from '@nestjs/core';
+import { WsAdapter } from '@nestjs/platform-ws';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.useWebSocketAdapter(new WsAdapter(app));
   app.setGlobalPrefix('api');
 
   app.enableCors({
-    origin: ['http://localhost:4200', 'http://localhost:4201'],
+    origin: (_origin: string, cb: (err: null, allow: boolean) => void) => cb(null, true),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true,
   });

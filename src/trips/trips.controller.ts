@@ -1,11 +1,15 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, HttpCode, UseGuards } from '@nestjs/common';
 import { TripsService } from './trips.service';
+import { TripsGateway } from './trips.gateway';
 import { Trip } from './trip.entity';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 
 @Controller('trips')
 export class TripsController {
-  constructor(private readonly tripsService: TripsService) {}
+  constructor(
+    private readonly tripsService: TripsService,
+    private readonly tripsGateway: TripsGateway,
+  ) {}
 
   @Get()
   findAll(): Promise<Trip[]> {
@@ -19,20 +23,26 @@ export class TripsController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() body: Partial<Trip>): Promise<Trip> {
-    return this.tripsService.create(body);
+  async create(@Body() body: Partial<Trip>): Promise<Trip> {
+    const trip = await this.tripsService.create(body);
+    await this.tripsGateway.broadcastTrips();
+    return trip;
   }
 
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: Partial<Trip>): Promise<Trip> {
-    return this.tripsService.update(id, body);
+  async update(@Param('id') id: string, @Body() body: Partial<Trip>): Promise<Trip> {
+    const trip = await this.tripsService.update(id, body);
+    await this.tripsGateway.broadcastTrips();
+    return trip;
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
+  @HttpCode(200)
   async remove(@Param('id') id: string): Promise<{ id: string }> {
     await this.tripsService.remove(id);
+    await this.tripsGateway.broadcastTrips();
     return { id };
   }
 }

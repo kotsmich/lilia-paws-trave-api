@@ -22,4 +22,7 @@ export class ContactSubmission {
 
   @Column('text')
   message: string;
+
+  @Column({ default: false })
+  isRead: boolean;
 }
