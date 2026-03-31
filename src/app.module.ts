@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { MailerModule } from '@nestjs-modules/mailer';
+import * as Joi from 'joi';
 import { join } from 'path';
 import { TripsModule } from './trips/trips.module';
 import { DogsModule } from './dogs/dogs.module';
@@ -16,32 +18,58 @@ const HandlebarsAdapter = require('@nestjs-modules/mailer/adapters/handlebars.ad
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    TypeOrmModule.forRoot({
-      type: 'better-sqlite3',
-      database: process.env['DB_PATH'] ?? 'database.sqlite',
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true,
-      logging: true,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validationSchema: Joi.object({
+        PORT: Joi.number().default(3000),
+        NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+        DB_PATH: Joi.string().default('database.sqlite'),
+        JWT_SECRET: Joi.string().required(),
+        ADMIN_EMAIL: Joi.string().email().required(),
+        ADMIN_PASSWORD: Joi.string().min(6).required(),
+        MAIL_HOST: Joi.string().default('smtp.gmail.com'),
+        MAIL_PORT: Joi.number().default(587),
+        MAIL_USER: Joi.string().allow('').default(''),
+        MAIL_PASS: Joi.string().allow('').default(''),
+        MAIL_TO: Joi.string().allow('').default(''),
+        ALLOWED_ORIGINS: Joi.string().default('http://localhost:4200,http://localhost:4201'),
+      }),
     }),
-    MailerModule.forRoot({
-      transport: {
-        host: process.env['MAIL_HOST'] ?? 'smtp.gmail.com',
-        port: parseInt(process.env['MAIL_PORT'] ?? '587'),
-        secure: false,
-        auth: {
-          user: process.env['MAIL_USER'],
-          pass: process.env['MAIL_PASS'],
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        type: 'better-sqlite3',
+        database: config.get<string>('DB_PATH', 'database.sqlite'),
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        synchronize: config.get<string>('NODE_ENV') !== 'production',
+        logging: config.get<string>('NODE_ENV') !== 'production',
+      }),
+    }),
+    // Global rate limiting: 100 requests per minute default; login overrides to 5
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        transport: {
+          host: config.get<string>('MAIL_HOST', 'smtp.gmail.com'),
+          port: config.get<number>('MAIL_PORT', 587),
+          secure: false,
+          auth: {
+            user: config.get<string>('MAIL_USER'),
+            pass: config.get<string>('MAIL_PASS'),
+          },
         },
-      },
-      defaults: {
-        from: `"Lilia Paws Travel" <${process.env['MAIL_USER'] ?? 'noreply@liliapawstravel.com'}>`,
-      },
-      template: {
-        dir: join(__dirname, 'mail', 'templates'),
-        adapter: new HandlebarsAdapter(),
-        options: { strict: true },
-      },
+        defaults: {
+          from: `"Lilia Paws Travel" <${config.get<string>('MAIL_USER', 'noreply@liliapawstravel.com')}>`,
+        },
+        template: {
+          dir: join(__dirname, 'mail', 'templates'),
+          adapter: new HandlebarsAdapter(),
+          options: { strict: true },
+        },
+      }),
     }),
     GatewayModule,
     AuthModule,

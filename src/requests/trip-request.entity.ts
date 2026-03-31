@@ -28,14 +28,14 @@ export class TripRequest {
 
   @Column('simple-json')
   dogs: Array<{
-    id: string;
+    id?: string;
     name: string;
     size: string;
     age: number;
     chipId: string;
     pickupLocation: string;
     dropLocation: string;
-    notes: string;
+    notes?: string;
   }>;
 
   @ManyToOne(() => Trip, (trip) => trip.requests, { onDelete: 'SET NULL', nullable: true })

@@ -1,10 +1,32 @@
-/** UpdateDogDto — add class-validator decorators after installing class-validator package */
+import { IsString, IsIn, IsNumber, IsOptional, Min } from 'class-validator';
+
 export class UpdateDogDto {
+  @IsOptional()
+  @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsIn(['small', 'medium', 'large'])
   size?: 'small' | 'medium' | 'large';
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   age?: number;
+
+  @IsOptional()
+  @IsString()
   chipId?: string;
+
+  @IsOptional()
+  @IsString()
   pickupLocation?: string;
+
+  @IsOptional()
+  @IsString()
   dropLocation?: string;
+
+  @IsOptional()
+  @IsString()
   notes?: string;
 }

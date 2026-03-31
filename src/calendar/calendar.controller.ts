@@ -1,4 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Header } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { TripsService } from '../trips/trips.service';
 
 /** Event colors must stay in sync with the Angular calendar selector */
@@ -6,11 +7,14 @@ const TRIP_COLOR_IN_PROGRESS = '#e07b54';
 const TRIP_COLOR_UPCOMING = '#4caf50';
 const TRIP_COLOR_UNAVAILABLE = '#94a3b8';
 
+@ApiTags('Calendar')
 @Controller('calendar')
 export class CalendarController {
   constructor(private readonly tripsService: TripsService) {}
 
+  @ApiOperation({ summary: 'Get calendar events for upcoming trips' })
   @Get()
+  @Header('Cache-Control', 'public, max-age=60')
   async getEvents(): Promise<Array<{ id: string; tripId: string; title: string; date: string; color: string }>> {
     const trips = await this.tripsService.findAll();
     return trips

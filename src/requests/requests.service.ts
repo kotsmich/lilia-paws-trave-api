@@ -1,15 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 import { TripRequest } from './trip-request.entity';
 import { Trip } from '../trips/trip.entity';
 import { Dog } from '../dogs/dog.entity';
+import { CreateTripRequestDto } from './create-trip-request.dto';
 import { AppGateway } from '../gateway/app.gateway';
 import { TripsGateway } from '../trips/trips.gateway';
 
 @Injectable()
 export class RequestsService {
+  private readonly logger = new Logger(RequestsService.name);
+
   constructor(
     @InjectRepository(TripRequest) private repo: Repository<TripRequest>,
     @InjectRepository(Trip) private tripRepo: Repository<Trip>,
@@ -18,27 +22,37 @@ export class RequestsService {
     private readonly appGateway: AppGateway,
     private readonly tripsGateway: TripsGateway,
     private readonly mailerService: MailerService,
+    private readonly config: ConfigService,
   ) {}
 
+  /** Retrieve all requests with trip relation, ordered by most recent. */
   findAll(): Promise<TripRequest[]> {
     return this.repo.find({ relations: ['trip'], order: { submittedAt: 'DESC' } });
   }
 
+  /** Retrieve a single request by ID. */
   async findOne(id: string): Promise<TripRequest> {
     const req = await this.repo.findOne({ where: { id }, relations: ['trip'] });
     if (!req) throw new NotFoundException('Request not found');
     return req;
   }
 
-  async create(data: Partial<TripRequest>): Promise<TripRequest> {
-    const req = this.repo.create(data);
+  /** Create a new trip request from validated DTO data. */
+  async create(data: CreateTripRequestDto): Promise<TripRequest> {
+    const req = this.repo.create({
+      requesterName: data.requesterName,
+      requesterEmail: data.requesterEmail,
+      requesterPhone: data.requesterPhone,
+      tripId: data.tripId,
+      dogs: data.dogs,
+    });
     const saved = await this.repo.save(req);
 
     this.appGateway.emitNewRequest(saved);
 
     try {
       await this.mailerService.sendMail({
-        to: process.env['MAIL_TO'] ?? 'liliapawstravel@gmail.com',
+        to: this.config.get<string>('MAIL_TO', 'noreply@liliapawstravel.com'),
         subject: `New Trip Request from ${saved.requesterName}`,
         template: 'new-request',
         context: {
@@ -50,12 +64,13 @@ export class RequestsService {
         },
       });
     } catch (err) {
-      console.error('Failed to send new request email:', err);
+      this.logger.error('Failed to send new request email', err);
     }
 
     return saved;
   }
 
+  /** Update the status of a request. */
   async updateStatus(id: string, status: TripRequest['status']): Promise<TripRequest> {
     const req = await this.findOne(id);
     req.status = status;
@@ -64,6 +79,7 @@ export class RequestsService {
     return saved;
   }
 
+  /** Approve a request: add dogs to trip in a transaction and update capacity. */
   async approveRequest(id: string): Promise<{ request: TripRequest; trip: Trip }> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -131,16 +147,17 @@ export class RequestsService {
     }
   }
 
+  /** Reject a request by setting its status to rejected. */
   async reject(id: string): Promise<TripRequest> {
     return this.updateStatus(id, 'rejected');
   }
 
+  /** Soft-delete a request (only non-pending). */
   async deleteRequest(id: string): Promise<void> {
     const req = await this.findOne(id);
     if (req.status === 'pending') {
       throw new BadRequestException('Cannot delete a pending request. Approve or reject it first.');
     }
-    // Soft delete: record remains in DB but is hidden from normal queries
     await this.repo.softDelete(id);
   }
 }
