@@ -95,6 +95,16 @@ export class RequestsService {
       const trip = await queryRunner.manager.findOne(Trip, { where: { id: req.tripId } });
       if (!trip) throw new NotFoundException('Trip not found');
 
+      if (!trip.acceptingRequests) {
+        throw new BadRequestException('Trip is not accepting requests');
+      }
+      if (trip.isFull) {
+        throw new BadRequestException('Trip is full');
+      }
+      if (trip.spotsAvailable < req.dogs.length) {
+        throw new BadRequestException('Not enough spots available');
+      }
+
       // Persist each dog from the request JSON as a new Dog entity linked to the trip
       const newDogs = queryRunner.manager.create(
         Dog,

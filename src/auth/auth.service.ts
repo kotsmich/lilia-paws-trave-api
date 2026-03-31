@@ -9,7 +9,7 @@ export class AuthService {
     private config: ConfigService,
   ) {}
 
-  login(email: string, password: string): { token: string } {
+  login(email: string, password: string): { token: string; user: { id: string; email: string } } {
     const adminEmail = this.config.get<string>('ADMIN_EMAIL');
     const adminPassword = this.config.get<string>('ADMIN_PASSWORD');
 
@@ -18,10 +18,10 @@ export class AuthService {
     }
 
     const token = this.jwtService.sign({ sub: 'admin', email });
-    return { token };
+    return { token, user: { id: 'admin', email: adminEmail! } };
   }
 
-  me(email: string): { email: string } {
-    return { email };
+  me(email: string): { id: string; email: string } {
+    return { id: 'admin', email };
   }
 }

@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpExceptionFilter } from './common/http-exception.filter';
@@ -12,6 +13,9 @@ async function bootstrap() {
 
   app.useWebSocketAdapter(new WsAdapter(app));
   app.setGlobalPrefix('api');
+
+  // Cookie parsing (required for HttpOnly JWT cookie auth)
+  app.use(cookieParser());
 
   // Compression middleware
   app.use(compression());
