@@ -8,5 +8,6 @@ import { DogsService } from './dogs.service';
   imports: [TypeOrmModule.forFeature([Dog])],
   controllers: [DogsController],
   providers: [DogsService],
+  exports: [DogsService],
 })
 export class DogsModule {}

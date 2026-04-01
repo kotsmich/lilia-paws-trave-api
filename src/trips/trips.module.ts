@@ -4,9 +4,10 @@ import { Trip } from './trip.entity';
 import { TripsController } from './trips.controller';
 import { TripsService } from './trips.service';
 import { TripsGateway } from './trips.gateway';
+import { DogsModule } from '../dogs/dogs.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Trip])],
+  imports: [TypeOrmModule.forFeature([Trip]), DogsModule],
   controllers: [TripsController],
   providers: [TripsService, TripsGateway],
   exports: [TripsService, TripsGateway],

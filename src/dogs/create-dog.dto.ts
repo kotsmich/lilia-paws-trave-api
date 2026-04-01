@@ -1,0 +1,39 @@
+import { IsString, IsIn, IsNumber, IsOptional, IsEmail, Min, Matches } from 'class-validator';
+
+export class CreateDogDto {
+  @IsString()
+  name: string;
+
+  @IsIn(['small', 'medium', 'large'])
+  size: 'small' | 'medium' | 'large';
+
+  @IsNumber()
+  @Min(0)
+  age: number;
+
+  @IsString()
+  @Matches(/^\d{15}$/)
+  chipId: string;
+
+  @IsString()
+  pickupLocation: string;
+
+  @IsString()
+  dropLocation: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsString()
+  requesterName?: string;
+
+  @IsOptional()
+  @IsEmail()
+  requesterEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  requesterPhone?: string;
+}

@@ -68,6 +68,16 @@ export class TripsService {
     return saved;
   }
 
+  /** Recalculate spotsAvailable/isFull after a dog is added or removed, then broadcast. */
+  async recalculateSpotsAfterDogChange(tripId: string): Promise<void> {
+    const trip = await this.findOne(tripId);
+    const dogsCount = trip.dogs.length;
+    trip.spotsAvailable = Math.max(0, trip.totalCapacity - dogsCount);
+    trip.isFull = dogsCount >= trip.totalCapacity;
+    await this.repo.save(trip);
+    await this.tripsGateway.broadcastTrips();
+  }
+
   /** Remove a trip by ID and broadcast the update. */
   async remove(id: string): Promise<void> {
     const trip = await this.findOne(id);

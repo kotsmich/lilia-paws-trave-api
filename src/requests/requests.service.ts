@@ -158,6 +158,9 @@ export class RequestsService {
           pickupLocation: d.pickupLocation,
           dropLocation: d.dropLocation,
           notes: d.notes,
+          requesterName: req.requesterName,
+          requesterEmail: req.requesterEmail,
+          requesterPhone: req.requesterPhone,
           trip,
         })),
       );

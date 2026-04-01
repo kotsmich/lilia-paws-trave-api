@@ -31,6 +31,15 @@ export class Dog {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @Column({ type: 'text', nullable: true })
+  requesterName: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  requesterEmail: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  requesterPhone: string | null;
+
   @ManyToOne(() => Trip, (trip) => trip.dogs, { onDelete: 'CASCADE' })
   trip: Trip;
 }

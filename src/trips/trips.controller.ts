@@ -6,11 +6,17 @@ import { JwtAuthGuard } from '../auth/jwt.guard';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { PublicTripDto } from './dto/public-trip.dto';
+import { DogsService } from '../dogs/dogs.service';
+import { Dog } from '../dogs/dog.entity';
+import { CreateDogDto } from '../dogs/create-dog.dto';
 
 @ApiTags('Trips')
 @Controller('trips')
 export class TripsController {
-  constructor(private readonly tripsService: TripsService) {}
+  constructor(
+    private readonly tripsService: TripsService,
+    private readonly dogsService: DogsService,
+  ) {}
 
   @ApiOperation({ summary: 'List all trips' })
   @Get()
@@ -50,6 +56,16 @@ export class TripsController {
   @Put(':id')
   update(@Param('id') id: string, @Body() body: UpdateTripDto): Promise<Trip> {
     return this.tripsService.update(id, body);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add a dog to a trip' })
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/dogs')
+  async addDog(@Param('id') id: string, @Body() body: CreateDogDto): Promise<Dog> {
+    const dog = await this.dogsService.create(id, body);
+    await this.tripsService.recalculateSpotsAfterDogChange(id);
+    return dog;
   }
 
   @ApiBearerAuth()
