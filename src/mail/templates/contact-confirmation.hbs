@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+    .card { background: #fff; border-radius: 8px; max-width: 560px; margin: 0 auto; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .header { border-bottom: 3px solid #c47c3e; padding-bottom: 16px; margin-bottom: 24px; }
+    .header h2 { margin: 0; color: #2d2016; font-size: 20px; }
+    .header p { margin: 4px 0 0; color: #7a6358; font-size: 13px; }
+    .banner { background: #fef9f0; border-radius: 6px; padding: 14px 18px; margin-bottom: 24px; color: #4a3728; font-size: 15px; line-height: 1.5; }
+    .row { margin-bottom: 14px; }
+    .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #c47c3e; margin-bottom: 3px; }
+    .value { font-size: 15px; color: #2d2016; }
+    .message-box { background: #fdf6ee; border-left: 4px solid #c47c3e; border-radius: 4px; padding: 16px; margin-top: 4px; white-space: pre-wrap; font-size: 14px; color: #2d2016; line-height: 1.6; }
+    .footer { margin-top: 28px; font-size: 12px; color: #aaa; border-top: 1px solid #eee; padding-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h2>🐾 Lilia Paws Travel</h2>
+      <p>We received your message</p>
+    </div>
+
+    <div class="banner">
+      Hi <strong>{{name}}</strong>, thank you for contacting us!<br/>
+      We have received your message and will get back to you as soon as possible.
+    </div>
+
+    <div class="row">
+      <div class="label">Your Name</div>
+      <div class="value">{{name}}</div>
+    </div>
+
+    {{#if subject}}
+    <div class="row">
+      <div class="label">Subject</div>
+      <div class="value">{{subject}}</div>
+    </div>
+    {{/if}}
+
+    <div class="row">
+      <div class="label">Your Message</div>
+      <div class="message-box">{{message}}</div>
+    </div>
+
+    <div class="footer">liliapawstravel.com</div>
+  </div>
+</body>
+</html>

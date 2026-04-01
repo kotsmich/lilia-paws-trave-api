@@ -49,6 +49,22 @@ export class ContactService {
       this.logger.error('Failed to send contact notification email', err);
     }
 
+    // Confirm receipt to the submitter
+    try {
+      await this.mailerService.sendMail({
+        to: saved.email,
+        subject: 'Thank you for contacting us — Lilia Paws Travel',
+        template: 'contact-confirmation',
+        context: {
+          name: saved.name,
+          subject: saved.subject ?? null,
+          message: saved.message,
+        },
+      });
+    } catch (err) {
+      this.logger.error('Failed to send contact confirmation email', err);
+    }
+
     return saved;
   }
 

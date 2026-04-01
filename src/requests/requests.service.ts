@@ -50,6 +50,11 @@ export class RequestsService {
 
     this.appGateway.emitNewRequest(saved);
 
+    const trip = await this.tripRepo.findOne({ where: { id: data.tripId } });
+    const tripRoute = trip ? `${trip.departureCity} → ${trip.arrivalCity}` : null;
+    const tripDate = trip?.date ?? null;
+
+    // Notify admin
     try {
       await this.mailerService.sendMail({
         to: this.config.get<string>('MAIL_TO', 'noreply@liliapawstravel.com'),
@@ -67,15 +72,52 @@ export class RequestsService {
       this.logger.error('Failed to send new request email', err);
     }
 
+    // Confirm receipt to the requester
+    try {
+      await this.mailerService.sendMail({
+        to: saved.requesterEmail,
+        subject: 'We received your trip request — Lilia Paws Travel',
+        template: 'request-confirmation',
+        context: {
+          requesterName: saved.requesterName,
+          tripRoute,
+          tripDate,
+          dogs: saved.dogs ?? [],
+        },
+      });
+    } catch (err) {
+      this.logger.error('Failed to send confirmation email to requester', err);
+    }
+
     return saved;
   }
 
-  /** Update the status of a request. */
+  /** Update the status of a request and optionally notify the requester. */
   async updateStatus(id: string, status: TripRequest['status']): Promise<TripRequest> {
     const req = await this.findOne(id);
     req.status = status;
     const saved = await this.repo.save(req);
     this.appGateway.emitRequestStatusUpdated(saved);
+
+    if (status === 'rejected') {
+      try {
+        await this.mailerService.sendMail({
+          to: req.requesterEmail,
+          subject: 'Your trip request has been rejected',
+          template: 'status-changed',
+          context: {
+            requesterName: req.requesterName,
+            isApproved: false,
+            tripDate: req.trip?.date ?? null,
+            tripRoute: req.trip ? `${req.trip.departureCity} → ${req.trip.arrivalCity}` : null,
+            adminNote: req.adminNote ?? null,
+          },
+        });
+      } catch (err) {
+        this.logger.error('Failed to send rejection email', err);
+      }
+    }
+
     return saved;
   }
 
@@ -148,6 +190,24 @@ export class RequestsService {
       this.appGateway.emitRequestStatusUpdated(savedReq);
       await this.tripsGateway.broadcastTrips();
 
+      // Notify requester
+      try {
+        await this.mailerService.sendMail({
+          to: req.requesterEmail,
+          subject: 'Your trip request has been approved!',
+          template: 'status-changed',
+          context: {
+            requesterName: req.requesterName,
+            isApproved: true,
+            tripDate: trip.date,
+            tripRoute: `${trip.departureCity} → ${trip.arrivalCity}`,
+            adminNote: req.adminNote ?? null,
+          },
+        });
+      } catch (err) {
+        this.logger.error('Failed to send approval email', err);
+      }
+
       return { request: savedReq, trip: updatedTrip };
     } catch (err) {
       await queryRunner.rollbackTransaction();
@@ -160,6 +220,45 @@ export class RequestsService {
   /** Reject a request by setting its status to rejected. */
   async reject(id: string): Promise<TripRequest> {
     return this.updateStatus(id, 'rejected');
+  }
+
+  /** Attach or update the admin-only note on a request. */
+  async addNote(id: string, note: string | undefined): Promise<TripRequest> {
+    const req = await this.findOne(id);
+    req.adminNote = note ?? null;
+    return this.repo.save(req);
+  }
+
+  /** Approve multiple requests in sequence; reports per-item success/failure. */
+  async bulkApprove(ids: string[]): Promise<{ succeeded: string[]; failed: Array<{ id: string; reason: string }> }> {
+    const succeeded: string[] = [];
+    const failed: Array<{ id: string; reason: string }> = [];
+    for (const id of ids) {
+      try {
+        await this.approveRequest(id);
+        succeeded.push(id);
+      } catch (err: unknown) {
+        const reason = (err as { message?: string })?.message ?? 'Unknown error';
+        failed.push({ id, reason });
+      }
+    }
+    return { succeeded, failed };
+  }
+
+  /** Reject multiple requests in sequence; reports per-item success/failure. */
+  async bulkReject(ids: string[]): Promise<{ succeeded: string[]; failed: Array<{ id: string; reason: string }> }> {
+    const succeeded: string[] = [];
+    const failed: Array<{ id: string; reason: string }> = [];
+    for (const id of ids) {
+      try {
+        await this.reject(id);
+        succeeded.push(id);
+      } catch (err: unknown) {
+        const reason = (err as { message?: string })?.message ?? 'Unknown error';
+        failed.push({ id, reason });
+      }
+    }
+    return { succeeded, failed };
   }
 
   /** Soft-delete a request (only non-pending). */

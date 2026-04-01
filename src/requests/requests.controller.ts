@@ -6,6 +6,8 @@ import { TripRequest } from './trip-request.entity';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 import { CreateTripRequestDto } from './create-trip-request.dto';
 import { UpdateStatusDto } from './update-status.dto';
+import { AddNoteDto } from './add-note.dto';
+import { BulkActionDto } from './bulk-action.dto';
 
 @ApiTags('Requests')
 @Controller('requests')
@@ -61,6 +63,33 @@ export class RequestsController {
   @Put(':id/reject')
   reject(@Param('id') id: string): Promise<TripRequest> {
     return this.requestsService.reject(id);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add or update admin note on a request' })
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/note')
+  addNote(
+    @Param('id') id: string,
+    @Body() body: AddNoteDto,
+  ): Promise<TripRequest> {
+    return this.requestsService.addNote(id, body.note);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Bulk approve multiple pending requests' })
+  @UseGuards(JwtAuthGuard)
+  @Post('bulk-approve')
+  bulkApprove(@Body() body: BulkActionDto) {
+    return this.requestsService.bulkApprove(body.ids);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Bulk reject multiple pending requests' })
+  @UseGuards(JwtAuthGuard)
+  @Post('bulk-reject')
+  bulkReject(@Body() body: BulkActionDto) {
+    return this.requestsService.bulkReject(body.ids);
   }
 
   @ApiBearerAuth()

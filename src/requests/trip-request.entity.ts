@@ -44,4 +44,7 @@ export class TripRequest {
   @Index()
   @Column({ nullable: true })
   tripId: string;
+
+  @Column({ type: 'text', nullable: true })
+  adminNote: string | null;
 }

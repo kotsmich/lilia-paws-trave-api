@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+    .card { background: #fff; border-radius: 8px; max-width: 560px; margin: 0 auto; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .header { border-bottom: 3px solid #c47c3e; padding-bottom: 16px; margin-bottom: 24px; }
+    .header h2 { margin: 0; font-size: 20px; }
+    .header p { margin: 4px 0 0; color: #7a6358; font-size: 13px; }
+    .row { margin-bottom: 14px; }
+    .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #c47c3e; margin-bottom: 3px; }
+    .value { font-size: 15px; color: #2d2016; }
+    .note-box { background: #fef9f0; border-left: 3px solid #c47c3e; padding: 12px 16px; border-radius: 4px; margin-top: 20px; font-size: 14px; color: #4a3728; }
+    .note-box .note-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #c47c3e; margin-bottom: 6px; }
+    .approved-banner { background: #e8f5e9; border-radius: 6px; padding: 14px 18px; margin-bottom: 20px; color: #2e7d32; font-weight: 600; font-size: 16px; }
+    .rejected-banner { background: #ffebee; border-radius: 6px; padding: 14px 18px; margin-bottom: 20px; color: #c62828; font-weight: 600; font-size: 16px; }
+    .footer { margin-top: 28px; font-size: 12px; color: #aaa; border-top: 1px solid #eee; padding-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h2 style="color:#2d2016">🐾 Lilia Paws Travel</h2>
+      <p>Trip Request Update</p>
+    </div>
+
+    {{#if isApproved}}
+    <div class="approved-banner">✅ Your trip request has been approved!</div>
+    {{else}}
+    <div class="rejected-banner">❌ Your trip request has been rejected</div>
+    {{/if}}
+
+    <div class="row">
+      <div class="label">Name</div>
+      <div class="value">{{requesterName}}</div>
+    </div>
+
+    {{#if tripRoute}}
+    <div class="row">
+      <div class="label">Trip Route</div>
+      <div class="value">{{tripRoute}}</div>
+    </div>
+    {{/if}}
+
+    {{#if tripDate}}
+    <div class="row">
+      <div class="label">Trip Date</div>
+      <div class="value">{{tripDate}}</div>
+    </div>
+    {{/if}}
+
+    {{#unless isApproved}}
+    <p style="margin-top:20px;font-size:14px;color:#555">
+      If you have questions, please reply to this email or contact us directly.
+    </p>
+    {{/unless}}
+
+    <div class="footer">liliapawstravel.com</div>
+  </div>
+</body>
+</html>
