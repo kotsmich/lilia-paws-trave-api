@@ -1,18 +1,41 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Dog } from './dog.entity';
+import { Trip } from '../trips/trip.entity';
 import { CreateDogDto } from './create-dog.dto';
 import { UpdateDogDto } from './update-dog.dto';
 
 @Injectable()
 export class DogsService {
-  constructor(@InjectRepository(Dog) private repo: Repository<Dog>) {}
+  constructor(
+    @InjectRepository(Dog) private repo: Repository<Dog>,
+    @InjectRepository(Trip) private tripRepo: Repository<Trip>,
+  ) {}
+
+  private async recalculateTrip(tripId: string): Promise<void> {
+    const trip = await this.tripRepo.findOne({ where: { id: tripId }, relations: ['dogs'] });
+    if (!trip) return;
+    const dogsCount = trip.dogs.length;
+    trip.spotsAvailable = Math.max(0, trip.totalCapacity - dogsCount);
+    trip.isFull = dogsCount >= trip.totalCapacity;
+    await this.tripRepo.save(trip);
+  }
 
   /** Create a new dog and associate it with a trip. */
   async create(tripId: string, data: CreateDogDto): Promise<Dog> {
     const dog = this.repo.create({ ...data, trip: { id: tripId } as any });
-    return this.repo.save(dog);
+    const saved = await this.repo.save(dog);
+    await this.recalculateTrip(tripId);
+    return saved;
+  }
+
+  /** Bulk-create multiple dogs and associate them with a trip. */
+  async createMany(tripId: string, data: CreateDogDto[]): Promise<Dog[]> {
+    const dogs = this.repo.create(data.map((d) => ({ ...d, trip: { id: tripId } as any })));
+    const saved = await this.repo.save(dogs);
+    await this.recalculateTrip(tripId);
+    return saved;
   }
 
   /** Find a dog by ID. */
@@ -20,6 +43,27 @@ export class DogsService {
     const dog = await this.repo.findOne({ where: { id } });
     if (!dog) throw new NotFoundException('Dog not found');
     return dog;
+  }
+
+  /** Bulk-delete multiple dogs and recalculate the trip once. */
+  async deleteMany(ids: string[]): Promise<{ deleted: string[] }> {
+    const dogs = await this.repo.find({ where: { id: In(ids) }, relations: ['trip'] });
+    const tripIds = new Set(dogs.map((d) => d.trip?.id).filter((id): id is string => !!id));
+    const deletedIds = dogs.map((d) => d.id);
+    await this.repo.remove(dogs);
+    for (const tripId of tripIds) {
+      await this.recalculateTrip(tripId);
+    }
+    return { deleted: deletedIds };
+  }
+
+  /** Delete a dog by ID. */
+  async delete(id: string): Promise<void> {
+    const dog = await this.repo.findOne({ where: { id }, relations: ['trip'] });
+    if (!dog) throw new NotFoundException('Dog not found');
+    const tripId = dog.trip?.id;
+    await this.repo.remove(dog);
+    if (tripId) await this.recalculateTrip(tripId);
   }
 
   /** Update a dog using only whitelisted DTO fields. */

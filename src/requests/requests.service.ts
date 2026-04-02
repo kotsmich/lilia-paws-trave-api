@@ -161,6 +161,7 @@ export class RequestsService {
           requesterName: req.requesterName,
           requesterEmail: req.requesterEmail,
           requesterPhone: req.requesterPhone,
+          requestId: req.id,
           trip,
         })),
       );

@@ -59,9 +59,7 @@ export class TripsService {
     if (data.acceptingRequests !== undefined) trip.acceptingRequests = data.acceptingRequests;
 
     const dogsCount = Array.isArray(trip.dogs) ? trip.dogs.length : 0;
-    if (dogsCount >= trip.totalCapacity) {
-      trip.isFull = true;
-    }
+    trip.isFull = dogsCount >= trip.totalCapacity;
     trip.spotsAvailable = Math.max(0, trip.totalCapacity - dogsCount);
     const saved = await this.repo.save(trip);
     await this.tripsGateway.broadcastTrips();

@@ -9,6 +9,7 @@ import { PublicTripDto } from './dto/public-trip.dto';
 import { DogsService } from '../dogs/dogs.service';
 import { Dog } from '../dogs/dog.entity';
 import { CreateDogDto } from '../dogs/create-dog.dto';
+import { BulkCreateDogDto } from '../dogs/bulk-create-dog.dto';
 
 @ApiTags('Trips')
 @Controller('trips')
@@ -66,6 +67,16 @@ export class TripsController {
     const dog = await this.dogsService.create(id, body);
     await this.tripsService.recalculateSpotsAfterDogChange(id);
     return dog;
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add multiple dogs to a trip' })
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/dogs/bulk')
+  async addDogs(@Param('id') id: string, @Body() body: BulkCreateDogDto): Promise<Dog[]> {
+    const dogs = await this.dogsService.createMany(id, body.dogs);
+    await this.tripsService.recalculateSpotsAfterDogChange(id);
+    return dogs;
   }
 
   @ApiBearerAuth()

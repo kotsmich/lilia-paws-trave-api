@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, UpdateDateColumn, Index } from 'typeorm';
 import { Trip } from '../trips/trip.entity';
+import { TripRequest } from '../requests/trip-request.entity';
 
 @Entity()
 export class Dog {
@@ -42,4 +43,11 @@ export class Dog {
 
   @ManyToOne(() => Trip, (trip) => trip.dogs, { onDelete: 'CASCADE' })
   trip: Trip;
+
+  @Index()
+  @Column({ nullable: true, type: 'varchar' })
+  requestId: string | null;
+
+  @ManyToOne(() => TripRequest, { nullable: true, onDelete: 'SET NULL' })
+  request: TripRequest | null;
 }
