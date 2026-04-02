@@ -55,11 +55,16 @@ export class RequestsService {
     const tripRoute = trip ? `${trip.departureCity} → ${trip.arrivalCity}` : null;
     const tripDate = trip?.date ?? null;
 
+    const businessEmail = this.config.get<string>('MAIL_USER', 'liliapawstravel@gmail.com');
+    const adminAppUrl = this.config.get<string>('ADMIN_APP_URL', 'http://localhost:4201');
+    const unsubscribeEmail = this.config.get<string>('UNSUBSCRIBE_EMAIL', 'unsubscribe@liliapawstravel.com');
+
     // Notify admin
     try {
       await this.mailerService.sendMail({
         to: this.config.get<string>('MAIL_TO', 'noreply@liliapawstravel.com'),
         subject: `New Trip Request from ${saved.requesterName}`,
+        replyTo: saved.requesterEmail,
         template: 'new-request',
         context: {
           requesterName: saved.requesterName,
@@ -67,7 +72,22 @@ export class RequestsService {
           requesterPhone: saved.requesterPhone,
           dogsCount: saved.dogs?.length ?? 0,
           submittedAt: new Date(saved.submittedAt).toLocaleString(),
+          adminUrl: adminAppUrl,
         },
+        text: [
+          `New Trip Request from ${saved.requesterName}`,
+          `Submitted via liliapawstravel.com`,
+          ``,
+          `Name: ${saved.requesterName}`,
+          `Email: ${saved.requesterEmail}`,
+          `Phone: ${saved.requesterPhone}`,
+          `Dogs: ${saved.dogs?.length ?? 0} dog(s)`,
+          ``,
+          `Review in Admin Panel: ${adminAppUrl}/admin/requests`,
+          ``,
+          `Submitted: ${new Date(saved.submittedAt).toLocaleString()}`,
+        ].join('\n'),
+        headers: { 'List-Unsubscribe': `<mailto:${unsubscribeEmail}>` },
       });
     } catch (err) {
       this.logger.error('Failed to send new request email', err);
@@ -75,9 +95,20 @@ export class RequestsService {
 
     // Confirm receipt to the requester
     try {
+      const dogLines = (saved.dogs ?? []).map((d) =>
+        [
+          `  - ${d.name} (${d.size}, ${d.age} yr(s))`,
+          `    Chip ID: ${d.chipId}`,
+          `    Pickup: ${d.pickupLocation}`,
+          `    Drop-off: ${d.dropLocation}`,
+          ...(d.notes ? [`    Notes: ${d.notes}`] : []),
+        ].join('\n'),
+      );
+
       await this.mailerService.sendMail({
         to: saved.requesterEmail,
         subject: 'We received your trip request — Lilia Paws Travel',
+        replyTo: businessEmail,
         template: 'request-confirmation',
         context: {
           requesterName: saved.requesterName,
@@ -85,6 +116,19 @@ export class RequestsService {
           tripDate,
           dogs: saved.dogs ?? [],
         },
+        text: [
+          `Hi ${saved.requesterName},`,
+          ``,
+          `Thank you for your request! We have received it and will review it as soon as possible. You will be notified once a decision has been made.`,
+          ``,
+          ...(tripRoute ? [`Trip Route: ${tripRoute}`] : []),
+          ...(tripDate ? [`Trip Date: ${tripDate}`] : []),
+          ``,
+          ...(dogLines.length ? [`Your Dogs (${dogLines.length}):`, ...dogLines, ``] : []),
+          `— Lilia Paws Travel`,
+          `liliapawstravel.com`,
+        ].join('\n'),
+        headers: { 'List-Unsubscribe': `<mailto:${unsubscribeEmail}>` },
       });
     } catch (err) {
       this.logger.error('Failed to send confirmation email to requester', err);
@@ -101,18 +145,37 @@ export class RequestsService {
     this.appGateway.emitRequestStatusUpdated(saved);
 
     if (status === 'rejected') {
+      const businessEmail = this.config.get<string>('MAIL_USER', 'liliapawstravel@gmail.com');
+      const unsubscribeEmail = this.config.get<string>('UNSUBSCRIBE_EMAIL', 'unsubscribe@liliapawstravel.com');
+      const tripRoute = req.trip ? `${req.trip.departureCity} → ${req.trip.arrivalCity}` : null;
+      const tripDate = req.trip?.date ?? null;
       try {
         await this.mailerService.sendMail({
           to: req.requesterEmail,
           subject: 'Your trip request has been rejected',
+          replyTo: businessEmail,
           template: 'status-changed',
           context: {
             requesterName: req.requesterName,
             isApproved: false,
-            tripDate: req.trip?.date ?? null,
-            tripRoute: req.trip ? `${req.trip.departureCity} → ${req.trip.arrivalCity}` : null,
+            tripDate,
+            tripRoute,
             adminNote: req.adminNote ?? null,
           },
+          text: [
+            `Hi ${req.requesterName},`,
+            ``,
+            `Unfortunately, your trip request has been rejected.`,
+            ``,
+            ...(tripRoute ? [`Trip Route: ${tripRoute}`] : []),
+            ...(tripDate ? [`Trip Date: ${tripDate}`] : []),
+            ``,
+            `If you have questions, please reply to this email or contact us directly.`,
+            ``,
+            `— Lilia Paws Travel`,
+            `liliapawstravel.com`,
+          ].join('\n'),
+          headers: { 'List-Unsubscribe': `<mailto:${unsubscribeEmail}>` },
         });
       } catch (err) {
         this.logger.error('Failed to send rejection email', err);
@@ -196,18 +259,34 @@ export class RequestsService {
       await this.tripsGateway.broadcastTrips();
 
       // Notify requester
+      const businessEmail = this.config.get<string>('MAIL_USER', 'liliapawstravel@gmail.com');
+      const unsubscribeEmail = this.config.get<string>('UNSUBSCRIBE_EMAIL', 'unsubscribe@liliapawstravel.com');
+      const approvedTripRoute = `${trip.departureCity} → ${trip.arrivalCity}`;
       try {
         await this.mailerService.sendMail({
           to: req.requesterEmail,
           subject: 'Your trip request has been approved!',
+          replyTo: businessEmail,
           template: 'status-changed',
           context: {
             requesterName: req.requesterName,
             isApproved: true,
             tripDate: trip.date,
-            tripRoute: `${trip.departureCity} → ${trip.arrivalCity}`,
+            tripRoute: approvedTripRoute,
             adminNote: req.adminNote ?? null,
           },
+          text: [
+            `Hi ${req.requesterName},`,
+            ``,
+            `Great news! Your trip request has been approved.`,
+            ``,
+            `Trip Route: ${approvedTripRoute}`,
+            `Trip Date: ${trip.date}`,
+            ``,
+            `— Lilia Paws Travel`,
+            `liliapawstravel.com`,
+          ].join('\n'),
+          headers: { 'List-Unsubscribe': `<mailto:${unsubscribeEmail}>` },
         });
       } catch (err) {
         this.logger.error('Failed to send approval email', err);

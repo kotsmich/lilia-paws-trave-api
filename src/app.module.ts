@@ -36,6 +36,8 @@ const HandlebarsAdapter = require('@nestjs-modules/mailer/adapters/handlebars.ad
         MAIL_USER: Joi.string().allow('').default(''),
         MAIL_PASS: Joi.string().allow('').default(''),
         MAIL_TO: Joi.string().allow('').default(''),
+        ADMIN_APP_URL: Joi.string().default('http://localhost:4201'),
+        UNSUBSCRIBE_EMAIL: Joi.string().email().default('unsubscribe@liliapawstravel.com'),
         ALLOWED_ORIGINS: Joi.string().default('http://localhost:4200,http://localhost:4201'),
       }),
     }),
