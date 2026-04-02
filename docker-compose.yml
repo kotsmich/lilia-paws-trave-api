@@ -29,7 +29,7 @@ services:
 
   user-app:
     build:
-      context: ../lilia-paws-travel
+      context: ../lilia-paws-front
       dockerfile: Dockerfile.user
     ports:
       - "80:80"
@@ -39,7 +39,7 @@ services:
 
   admin-app:
     build:
-      context: ../lilia-paws-travel
+      context: ../lilia-paws-front
       dockerfile: Dockerfile.admin
     ports:
       - "81:80"
