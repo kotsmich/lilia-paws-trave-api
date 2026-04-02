@@ -13,10 +13,6 @@ import {
 } from 'class-validator';
 
 export class DogDto {
-  @IsOptional()
-  @IsString()
-  id?: string;
-
   @IsString()
   @IsNotEmpty()
   name!: string;

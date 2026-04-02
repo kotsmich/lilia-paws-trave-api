@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/jwt.guard';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { PublicTripDto } from './dto/public-trip.dto';
+import { TripDetailDto } from './dto/trip-detail.dto';
 import { DogsService } from '../dogs/dogs.service';
 import { Dog } from '../dogs/dog.entity';
 import { CreateDogDto } from '../dogs/create-dog.dto';
@@ -37,8 +38,8 @@ export class TripsController {
   @ApiOperation({ summary: 'Admin: Get a trip with full dog list' })
   @UseGuards(JwtAuthGuard)
   @Get(':id/detail')
-  async findOneDetail(@Param('id') id: string): Promise<Trip> {
-    return this.tripsService.findOne(id);
+  async findOneDetail(@Param('id') id: string): Promise<TripDetailDto> {
+    return this.tripsService.findOneDetail(id);
   }
 
   @ApiBearerAuth()

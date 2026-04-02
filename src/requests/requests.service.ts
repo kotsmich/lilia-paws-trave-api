@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -44,7 +45,7 @@ export class RequestsService {
       requesterEmail: data.requesterEmail,
       requesterPhone: data.requesterPhone,
       tripId: data.tripId,
-      dogs: data.dogs,
+      dogs: data.dogs.map((d) => ({ ...d, id: randomUUID() })),
     });
     const saved = await this.repo.save(req);
 

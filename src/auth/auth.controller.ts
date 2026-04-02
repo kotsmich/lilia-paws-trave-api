@@ -15,11 +15,11 @@ export class AuthController {
   @UseGuards(ThrottlerGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
-  login(
+  async login(
     @Body() body: LoginDto,
     @Res({ passthrough: true }) res: Response,
-  ): { email: string } {
-    const { token, user: { email } } = this.authService.login(body.email, body.password);
+  ): Promise<{ email: string }> {
+    const { token, user: { email } } = await this.authService.login(body.email, body.password);
     res.cookie('admin_token', token, {
       httpOnly: true,
       sameSite: 'strict',

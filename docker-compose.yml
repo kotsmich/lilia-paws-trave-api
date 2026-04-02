@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lilia
+      POSTGRES_PASSWORD: lilia_dev
+      POSTGRES_DB: lilia_paws
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  api:
+    build: .
+    env_file: .env
+    environment:
+      NODE_ENV: development
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: lilia
+      DB_PASS: lilia_dev
+      DB_NAME: lilia_paws
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  user-app:
+    build:
+      context: ../lilia-paws-travel
+      dockerfile: Dockerfile.user
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  admin-app:
+    build:
+      context: ../lilia-paws-travel
+      dockerfile: Dockerfile.admin
+    ports:
+      - "81:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  pg-data:

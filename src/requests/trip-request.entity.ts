@@ -26,9 +26,9 @@ export class TripRequest {
   @Column({ default: 'pending' })
   status: 'pending' | 'approved' | 'rejected';
 
-  @Column('simple-json')
+  @Column({ type: 'jsonb' })
   dogs: Array<{
-    id?: string;
+    id: string;
     name: string;
     size: string;
     age: number;

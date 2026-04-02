@@ -5,6 +5,7 @@ import { Trip } from './trip.entity';
 import { TripsGateway } from './trips.gateway';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
+import { TripDetailDto, RequesterEntry } from './dto/trip-detail.dto';
 
 @Injectable()
 export class TripsService {
@@ -26,6 +27,51 @@ export class TripsService {
     const trip = await this.repo.findOne({ where: { id }, relations: ['dogs', 'requests'] });
     if (!trip) throw new NotFoundException('Trip not found');
     return trip;
+  }
+
+  /** Retrieve a trip for the admin detail view with requesters grouped by name. */
+  async findOneDetail(id: string): Promise<TripDetailDto> {
+    const trip = await this.findOne(id);
+
+    const entries: RequesterEntry[] = [];
+
+    // One entry per approved request, keyed by request.id
+    for (const req of trip.requests.filter((r) => r.status === 'approved')) {
+      entries.push({
+        requestId: req.id,
+        name: req.requesterName,
+        dogs: trip.dogs.filter((d) => d.requestId === req.id),
+      });
+    }
+
+    // Manually added dogs (no requestId) grouped by requesterName
+    const manualMap = new Map<string, RequesterEntry>();
+    for (const dog of trip.dogs.filter((d) => d.requestId === null && d.requesterName !== null)) {
+      const name = dog.requesterName as string;
+      if (!manualMap.has(name)) manualMap.set(name, { requestId: null, name, dogs: [] });
+      manualMap.get(name)!.dogs.push(dog);
+    }
+    entries.push(...manualMap.values());
+
+    const dto = new TripDetailDto();
+    dto.id = trip.id;
+    dto.date = trip.date;
+    dto.departureCountry = trip.departureCountry;
+    dto.departureCity = trip.departureCity;
+    dto.arrivalCountry = trip.arrivalCountry;
+    dto.arrivalCity = trip.arrivalCity;
+    dto.status = trip.status;
+    dto.notes = trip.notes;
+    dto.totalCapacity = trip.totalCapacity;
+    dto.spotsAvailable = trip.spotsAvailable;
+    dto.isFull = trip.isFull;
+    dto.acceptingRequests = trip.acceptingRequests;
+    dto.createdAt = trip.createdAt;
+    dto.updatedAt = trip.updatedAt;
+    dto.dogs = trip.dogs;
+    dto.requester = entries;
+
+    return dto;
   }
 
   /** Create a new trip from validated DTO data. */
