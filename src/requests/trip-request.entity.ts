@@ -16,11 +16,11 @@ export class TripRequest {
   @Column()
   requesterName: string;
 
-  @Column()
-  requesterEmail: string;
+  @Column({ type: 'text', nullable: true })
+  requesterEmail: string | null;
 
-  @Column()
-  requesterPhone: string;
+  @Column({ type: 'text', nullable: true })
+  requesterPhone: string | null;
 
   @Index()
   @Column({ default: 'pending' })

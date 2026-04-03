@@ -35,12 +35,14 @@ export class TripsService {
 
     const entries: RequesterEntry[] = [];
 
-    // One entry per approved request, keyed by request.id
+    // One entry per approved request that still has dogs, keyed by request.id
     for (const req of trip.requests.filter((r) => r.status === 'approved')) {
+      const reqDogs = trip.dogs.filter((d) => d.requestId === req.id);
+      if (reqDogs.length === 0) continue;
       entries.push({
         requestId: req.id,
         name: req.requesterName,
-        dogs: trip.dogs.filter((d) => d.requestId === req.id),
+        dogs: reqDogs,
       });
     }
 
@@ -69,7 +71,7 @@ export class TripsService {
     dto.createdAt = trip.createdAt;
     dto.updatedAt = trip.updatedAt;
     dto.dogs = trip.dogs;
-    dto.requester = entries;
+    dto.requesters = entries;
 
     return dto;
   }
@@ -90,7 +92,7 @@ export class TripsService {
   }
 
   /** Update a trip using only whitelisted DTO fields. */
-  async update(id: string, data: UpdateTripDto): Promise<Trip> {
+  async update(id: string, data: UpdateTripDto): Promise<TripDetailDto> {
     const trip = await this.findOne(id);
 
     // Whitelist-based update: only apply fields present in the DTO
@@ -107,9 +109,9 @@ export class TripsService {
     const dogsCount = Array.isArray(trip.dogs) ? trip.dogs.length : 0;
     trip.isFull = dogsCount >= trip.totalCapacity;
     trip.spotsAvailable = Math.max(0, trip.totalCapacity - dogsCount);
-    const saved = await this.repo.save(trip);
+    await this.repo.save(trip);
     await this.tripsGateway.broadcastTrips();
-    return saved;
+    return this.findOneDetail(id);
   }
 
   /** Recalculate spotsAvailable/isFull after a dog is added or removed, then broadcast. */

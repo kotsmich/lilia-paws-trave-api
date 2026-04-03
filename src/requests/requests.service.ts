@@ -64,7 +64,7 @@ export class RequestsService {
       await this.mailerService.sendMail({
         to: this.config.get<string>('MAIL_TO', 'noreply@liliapawstravel.com'),
         subject: `New Trip Request from ${saved.requesterName}`,
-        replyTo: saved.requesterEmail,
+        replyTo: saved.requesterEmail ?? undefined,
         template: 'new-request',
         context: {
           requesterName: saved.requesterName,
@@ -93,8 +93,8 @@ export class RequestsService {
       this.logger.error('Failed to send new request email', err);
     }
 
-    // Confirm receipt to the requester
-    try {
+    // Confirm receipt to the requester (skip if no email — admin-created requester)
+    if (saved.requesterEmail) try {
       const dogLines = (saved.dogs ?? []).map((d) =>
         [
           `  - ${d.name} (${d.size}, ${d.age} yr(s))`,
@@ -106,7 +106,7 @@ export class RequestsService {
       );
 
       await this.mailerService.sendMail({
-        to: saved.requesterEmail,
+        to: saved.requesterEmail as string,
         subject: 'We received your trip request — Lilia Paws Travel',
         replyTo: businessEmail,
         template: 'request-confirmation',
@@ -144,7 +144,7 @@ export class RequestsService {
     const saved = await this.repo.save(req);
     this.appGateway.emitRequestStatusUpdated(saved);
 
-    if (status === 'rejected') {
+    if (status === 'rejected' && req.requesterEmail) {
       const businessEmail = this.config.get<string>('MAIL_USER', 'liliapawstravel@gmail.com');
       const unsubscribeEmail = this.config.get<string>('UNSUBSCRIBE_EMAIL', 'unsubscribe@liliapawstravel.com');
       const tripRoute = req.trip ? `${req.trip.departureCity} → ${req.trip.arrivalCity}` : null;
@@ -258,11 +258,11 @@ export class RequestsService {
       this.appGateway.emitRequestStatusUpdated(savedReq);
       await this.tripsGateway.broadcastTrips();
 
-      // Notify requester
+      // Notify requester (skip if no email — admin-created requester)
       const businessEmail = this.config.get<string>('MAIL_USER', 'liliapawstravel@gmail.com');
       const unsubscribeEmail = this.config.get<string>('UNSUBSCRIBE_EMAIL', 'unsubscribe@liliapawstravel.com');
       const approvedTripRoute = `${trip.departureCity} → ${trip.arrivalCity}`;
-      try {
+      if (req.requesterEmail) try {
         await this.mailerService.sendMail({
           to: req.requesterEmail,
           subject: 'Your trip request has been approved!',

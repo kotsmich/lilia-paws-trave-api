@@ -24,5 +24,5 @@ export class TripDetailDto {
   updatedAt: Date;
   dogs: Dog[];
   /** Requesters grouped by name, each with their associated dogs */
-  requester: RequesterEntry[];
+  requesters: RequesterEntry[];
 }

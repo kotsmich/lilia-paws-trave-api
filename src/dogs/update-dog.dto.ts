@@ -1,4 +1,4 @@
-import { IsString, IsIn, IsNumber, IsOptional, IsEmail, Min } from 'class-validator';
+import { IsString, IsIn, IsNumber, IsOptional, IsEmail, IsUUID, Min } from 'class-validator';
 
 export class UpdateDogDto {
   @IsOptional()
@@ -41,4 +41,8 @@ export class UpdateDogDto {
   @IsOptional()
   @IsString()
   requesterPhone?: string;
+
+  @IsOptional()
+  @IsUUID()
+  requestId?: string | null;
 }

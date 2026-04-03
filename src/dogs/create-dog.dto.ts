@@ -1,4 +1,4 @@
-import { IsString, IsIn, IsNumber, IsOptional, IsEmail, Min, Matches } from 'class-validator';
+import { IsString, IsIn, IsNumber, IsOptional, IsEmail, IsUUID, Min, Matches } from 'class-validator';
 
 export class CreateDogDto {
   @IsString()
@@ -36,4 +36,12 @@ export class CreateDogDto {
   @IsOptional()
   @IsString()
   requesterPhone?: string;
+
+  @IsOptional()
+  @IsUUID()
+  requestId?: string;
+
+  @IsOptional()
+  @IsString()
+  newRequesterName?: string;
 }

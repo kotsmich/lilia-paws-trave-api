@@ -56,7 +56,7 @@ export class TripsController {
   @ApiOperation({ summary: 'Update a trip' })
   @UseGuards(JwtAuthGuard)
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: UpdateTripDto): Promise<Trip> {
+  update(@Param('id') id: string, @Body() body: UpdateTripDto): Promise<TripDetailDto> {
     return this.tripsService.update(id, body);
   }
 
