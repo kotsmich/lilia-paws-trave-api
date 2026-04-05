@@ -10,6 +10,10 @@ export class UpdateDogDto {
   size?: 'small' | 'medium' | 'large';
 
   @IsOptional()
+  @IsIn(['male', 'female'])
+  gender?: 'male' | 'female';
+
+  @IsOptional()
   @IsNumber()
   @Min(0)
   age?: number;

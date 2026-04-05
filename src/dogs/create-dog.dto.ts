@@ -7,6 +7,9 @@ export class CreateDogDto {
   @IsIn(['small', 'medium', 'large'])
   size: 'small' | 'medium' | 'large';
 
+  @IsIn(['male', 'female'])
+  gender: 'male' | 'female';
+
   @IsNumber()
   @Min(0)
   age: number;

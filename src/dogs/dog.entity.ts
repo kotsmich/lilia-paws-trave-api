@@ -14,6 +14,9 @@ export class Dog {
   size: 'small' | 'medium' | 'large';
 
   @Column()
+  gender: 'male' | 'female';
+
+  @Column()
   age: number;
 
   @Index()

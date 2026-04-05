@@ -217,6 +217,7 @@ export class RequestsService {
         req.dogs.map((d) => ({
           name: d.name,
           size: d.size as 'small' | 'medium' | 'large',
+          gender: d.gender as 'male' | 'female',
           age: d.age,
           chipId: d.chipId,
           pickupLocation: d.pickupLocation,

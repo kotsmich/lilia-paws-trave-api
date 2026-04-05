@@ -31,6 +31,7 @@ export class TripRequest {
     id: string;
     name: string;
     size: string;
+    gender: string;
     age: number;
     chipId: string;
     pickupLocation: string;

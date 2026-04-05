@@ -128,6 +128,7 @@ export class DogsService {
     const dog = await this.findOne(id);
     if (data.name !== undefined) dog.name = data.name;
     if (data.size !== undefined) dog.size = data.size;
+    if (data.gender !== undefined) dog.gender = data.gender;
     if (data.age !== undefined) dog.age = data.age;
     if (data.chipId !== undefined) dog.chipId = data.chipId;
     if (data.pickupLocation !== undefined) dog.pickupLocation = data.pickupLocation;
