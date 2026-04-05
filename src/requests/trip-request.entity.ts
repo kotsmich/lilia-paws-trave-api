@@ -24,7 +24,7 @@ export class TripRequest {
 
   @Index()
   @Column({ default: 'pending' })
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
 
   @Column({ type: 'jsonb' })
   dogs: Array<{

@@ -1,8 +1,12 @@
 import { Injectable, NotFoundException, Inject, forwardRef, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
+import { MailerService } from '@nestjs-modules/mailer';
 import { Trip } from './trip.entity';
+import { TripRequest } from '../requests/trip-request.entity';
 import { TripsGateway } from './trips.gateway';
+import { AppGateway } from '../gateway/app.gateway';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { TripDetailDto, RequesterEntry } from './dto/trip-detail.dto';
@@ -13,8 +17,12 @@ export class TripsService {
 
   constructor(
     @InjectRepository(Trip) private repo: Repository<Trip>,
+    @InjectRepository(TripRequest) private requestRepo: Repository<TripRequest>,
     @Inject(forwardRef(() => TripsGateway))
     private readonly tripsGateway: TripsGateway,
+    private readonly appGateway: AppGateway,
+    private readonly mailerService: MailerService,
+    private readonly config: ConfigService,
   ) {}
 
   /** Retrieve all trips with their dogs. */
@@ -124,9 +132,56 @@ export class TripsService {
     await this.tripsGateway.broadcastTrips();
   }
 
-  /** Remove a trip by ID and broadcast the update. */
+  /** Remove a trip by ID, cancel all pending requests with email notification, and broadcast the update. */
   async remove(id: string): Promise<void> {
     const trip = await this.findOne(id);
+
+    const pendingRequests = await this.requestRepo.find({
+      where: { tripId: id, status: 'pending' },
+      relations: ['trip'],
+    });
+
+    const tripRoute = `${trip.departureCity} → ${trip.arrivalCity}`;
+    const businessEmail = this.config.get<string>('MAIL_USER', 'liliapawstravel@gmail.com');
+    const unsubscribeEmail = this.config.get<string>('UNSUBSCRIBE_EMAIL', 'unsubscribe@liliapawstravel.com');
+
+    for (const req of pendingRequests) {
+      req.status = 'cancelled';
+      const saved = await this.requestRepo.save(req);
+      this.appGateway.emitRequestStatusUpdated(saved);
+      this.logger.log(`Request ${req.id} auto-cancelled due to trip ${id} deletion`);
+
+      if (req.requesterEmail) {
+        try {
+          await this.mailerService.sendMail({
+            to: req.requesterEmail,
+            subject: 'Your trip request has been cancelled — Lilia Paws Travel',
+            replyTo: businessEmail,
+            template: 'trip-cancelled',
+            context: {
+              requesterName: req.requesterName,
+              tripRoute,
+              tripDate: trip.date,
+            },
+            text: [
+              `Hi ${req.requesterName},`,
+              ``,
+              `We regret to inform you that the trip ${tripRoute} on ${trip.date} has been cancelled.`,
+              `As a result, your request has been cancelled as well.`,
+              ``,
+              `If you have any questions or would like to arrange an alternative, please contact us directly and we will be happy to help.`,
+              ``,
+              `— Lilia Paws Travel`,
+              `liliapawstravel.com`,
+            ].join('\n'),
+            headers: { 'List-Unsubscribe': `<mailto:${unsubscribeEmail}>` },
+          });
+        } catch (err) {
+          this.logger.error(`Failed to send cancellation email to ${req.requesterEmail}`, err);
+        }
+      }
+    }
+
     await this.repo.remove(trip);
     await this.tripsGateway.broadcastTrips();
   }
