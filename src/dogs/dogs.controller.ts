@@ -44,7 +44,7 @@ export class DogsController {
       ],
       {
         storage: dogTempStorage,
-        limits: { fileSize: 10 * 1024 * 1024 },
+        limits: { fileSize: 50 * 1024 * 1024 },
       },
     ),
   )
@@ -72,7 +72,7 @@ export class DogsController {
     FileInterceptor('photo', {
       storage: dogPhotoStorage,
       fileFilter: imageFileFilter,
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: { fileSize: 50 * 1024 * 1024 },
     }),
   )
   async uploadPhoto(
@@ -90,7 +90,7 @@ export class DogsController {
     FileInterceptor('document', {
       storage: dogDocumentStorage,
       fileFilter: documentFileFilter,
-      limits: { fileSize: 10 * 1024 * 1024 },
+      limits: { fileSize: 50 * 1024 * 1024 },
     }),
   )
   async uploadDocument(
