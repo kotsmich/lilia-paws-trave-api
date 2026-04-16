@@ -17,4 +17,4 @@ jobs:
           script: |
             cd /var/www/lilia-paws-back
             git pull origin main
-            docker compose up -d --build api
+            docker compose up -d --build --force-recreate api
