@@ -49,4 +49,12 @@ export class UpdateDogDto {
   @IsOptional()
   @IsUUID()
   requestId?: string | null;
+
+  @IsOptional()
+  @IsString()
+  photoUrl?: string | null;
+
+  @IsOptional()
+  @IsString()
+  documentUrl?: string | null;
 }

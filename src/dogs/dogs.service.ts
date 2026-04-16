@@ -150,6 +150,8 @@ export class DogsService {
     if (data.requesterEmail !== undefined) dog.requesterEmail = data.requesterEmail ?? null;
     if (data.requesterPhone !== undefined) dog.requesterPhone = data.requesterPhone ?? null;
     if (data.requestId !== undefined) dog.requestId = data.requestId ?? null;
+    if (data.photoUrl !== undefined) dog.photoUrl = data.photoUrl ?? null;
+    if (data.documentUrl !== undefined) dog.documentUrl = data.documentUrl ?? null;
     return this.repo.save(dog);
   }
 }
