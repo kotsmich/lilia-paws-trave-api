@@ -37,6 +37,9 @@ export class TripRequest {
     pickupLocation: string;
     dropLocation: string;
     notes?: string;
+    photoUrl?: string | null;
+    documentUrl?: string | null;
+    documentType?: string | null;
   }>;
 
   @ManyToOne(() => Trip, (trip) => trip.requests, { onDelete: 'SET NULL', nullable: true })

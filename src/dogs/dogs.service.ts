@@ -123,6 +123,18 @@ export class DogsService {
     if (tripId) await this.recalculateTrip(tripId);
   }
 
+  /** Update a dog's photo URL. */
+  async updatePhoto(id: string, photoUrl: string): Promise<Dog> {
+    await this.repo.update(id, { photoUrl });
+    return this.findOne(id);
+  }
+
+  /** Update a dog's document URL and type. */
+  async updateDocument(id: string, documentUrl: string, documentType: string | null): Promise<Dog> {
+    await this.repo.update(id, { documentUrl, documentType });
+    return this.findOne(id);
+  }
+
   /** Update a dog using only whitelisted DTO fields. */
   async update(id: string, data: UpdateDogDto): Promise<Dog> {
     const dog = await this.findOne(id);

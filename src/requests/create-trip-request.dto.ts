@@ -42,6 +42,18 @@ export class DogDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  photoUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  documentUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  documentType?: string;
 }
 
 export class CreateTripRequestDto {

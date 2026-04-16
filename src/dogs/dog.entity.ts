@@ -32,6 +32,15 @@ export class Dog {
   @Column({ nullable: true })
   notes: string;
 
+  @Column({ nullable: true, type: 'varchar' })
+  photoUrl: string | null;
+
+  @Column({ nullable: true, type: 'varchar' })
+  documentUrl: string | null;
+
+  @Column({ nullable: true, type: 'varchar' })
+  documentType: string | null;
+
   @UpdateDateColumn()
   updatedAt: Date;
 

@@ -1,18 +1,23 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import { join } from 'path';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.useWebSocketAdapter(new WsAdapter(app));
   app.setGlobalPrefix('api');
+
+  // Serve uploaded files — accessible via /api/uploads/... (proxied by existing /api rules)
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), { prefix: '/api/uploads' });
 
   // Cookie parsing (required for HttpOnly JWT cookie auth)
   app.use(cookieParser());
