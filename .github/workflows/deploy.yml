@@ -16,5 +16,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /var/www/lilia-paws-back
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
             docker compose up -d --build --force-recreate api
