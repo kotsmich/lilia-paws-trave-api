@@ -47,4 +47,12 @@ export class CreateDogDto {
   @IsOptional()
   @IsString()
   newRequesterName?: string;
+
+  @IsOptional()
+  @IsString()
+  destinationId?: string | null;
+
+  @IsOptional()
+  @IsString()
+  receiver?: string | null;
 }

@@ -3,10 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
-import { Trip } from './trip.entity';
+import { Trip, TripDestination } from './trip.entity';
 import { TripRequest } from '../requests/trip-request.entity';
 import { TripsGateway } from './trips.gateway';
 import { AppGateway } from '../gateway/app.gateway';
+import { DogsService } from '../dogs/dogs.service';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { TripDetailDto, RequesterEntry } from './dto/trip-detail.dto';
@@ -23,6 +24,7 @@ export class TripsService {
     private readonly appGateway: AppGateway,
     private readonly mailerService: MailerService,
     private readonly config: ConfigService,
+    private readonly dogsService: DogsService,
   ) {}
 
   /** Retrieve all trips with their dogs. */
@@ -78,16 +80,33 @@ export class TripsService {
     dto.acceptingRequests = trip.acceptingRequests;
     dto.createdAt = trip.createdAt;
     dto.updatedAt = trip.updatedAt;
+    dto.destinations = trip.destinations ?? [];
     dto.dogs = trip.dogs;
     dto.requesters = entries;
 
     return dto;
   }
 
+  private static readonly defaultDestinations: TripDestination[] = [
+    { id: 'def-dest-01', name: 'Αθήνα, Ελλάδα' },
+    { id: 'def-dest-02', name: 'Θεσσαλονίκη, Ελλάδα' },
+    { id: 'def-dest-03', name: 'Βερολίνο, Γερμανία' },
+    { id: 'def-dest-04', name: 'Μόναχο, Γερμανία' },
+    { id: 'def-dest-05', name: 'Αμβούργο, Γερμανία' },
+    { id: 'def-dest-06', name: 'Παρίσι, Γαλλία' },
+    { id: 'def-dest-07', name: 'Άμστερνταμ, Ολλανδία' },
+    { id: 'def-dest-08', name: 'Ρώμη, Ιταλία' },
+    { id: 'def-dest-09', name: 'Βαρκελώνη, Ισπανία' },
+    { id: 'def-dest-10', name: 'Βιέννη, Αυστρία' },
+    { id: 'def-dest-11', name: 'Βρυξέλλες, Βέλγιο' },
+    { id: 'def-dest-12', name: 'Ζυρίχη, Ελβετία' },
+  ];
+
   /** Create a new trip from validated DTO data. */
   async create(data: CreateTripDto): Promise<Trip> {
     const trip = this.repo.create({
       ...data,
+      destinations: data.destinations?.length ? data.destinations : TripsService.defaultDestinations,
       spotsAvailable: data.totalCapacity,
       isFull: false,
     });
@@ -113,6 +132,15 @@ export class TripsService {
     if (data.notes !== undefined) trip.notes = data.notes;
     if (data.totalCapacity !== undefined) trip.totalCapacity = data.totalCapacity;
     if (data.acceptingRequests !== undefined) trip.acceptingRequests = data.acceptingRequests;
+    if (data.destinations !== undefined) {
+      const oldIds = new Set((trip.destinations ?? []).map((d) => d.id));
+      const newIds = new Set(data.destinations.map((d) => d.id));
+      const removedIds = [...oldIds].filter((id) => !newIds.has(id));
+      if (removedIds.length) {
+        await this.dogsService.nullifyRemovedDestinations(id, removedIds);
+      }
+      trip.destinations = data.destinations;
+    }
 
     const dogsCount = Array.isArray(trip.dogs) ? trip.dogs.length : 0;
     trip.isFull = dogsCount >= trip.totalCapacity;

@@ -57,4 +57,12 @@ export class UpdateDogDto {
   @IsOptional()
   @IsString()
   documentUrl?: string | null;
+
+  @IsOptional()
+  @IsString()
+  destinationId?: string | null;
+
+  @IsOptional()
+  @IsString()
+  receiver?: string | null;
 }

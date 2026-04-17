@@ -2,6 +2,11 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, Up
 import { Dog } from '../dogs/dog.entity';
 import { TripRequest } from '../requests/trip-request.entity';
 
+export interface TripDestination {
+  id: string;
+  name: string;
+}
+
 @Entity()
 export class Trip {
   @PrimaryGeneratedColumn('uuid')
@@ -41,6 +46,9 @@ export class Trip {
 
   @Column({ default: true })
   acceptingRequests: boolean;
+
+  @Column({ type: 'simple-json', default: '[]' })
+  destinations: TripDestination[];
 
   @CreateDateColumn()
   createdAt: Date;

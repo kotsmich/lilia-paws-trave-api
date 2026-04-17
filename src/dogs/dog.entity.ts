@@ -41,6 +41,9 @@ export class Dog {
   @Column({ nullable: true, type: 'varchar' })
   documentType: string | null;
 
+  @Column({ nullable: true, type: 'varchar' })
+  destinationId: string | null;
+
   @UpdateDateColumn()
   updatedAt: Date;
 
@@ -59,6 +62,9 @@ export class Dog {
   @Index()
   @Column({ nullable: true, type: 'varchar' })
   requestId: string | null;
+
+  @Column({ nullable: true, type: 'varchar' })
+  receiver: string | null;
 
   @ManyToOne(() => TripRequest, { nullable: true, onDelete: 'SET NULL' })
   request: TripRequest | null;

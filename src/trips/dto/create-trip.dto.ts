@@ -1,4 +1,15 @@
-import { IsString, IsIn, IsNumber, IsOptional, IsBoolean, IsNotEmpty, Min, Matches } from 'class-validator';
+import { IsString, IsIn, IsNumber, IsOptional, IsBoolean, IsNotEmpty, IsArray, Min, Matches, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class TripDestinationDto {
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+}
 
 export class CreateTripDto {
   @IsString()
@@ -36,4 +47,10 @@ export class CreateTripDto {
   @IsOptional()
   @IsBoolean()
   acceptingRequests?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => TripDestinationDto)
+  destinations?: TripDestinationDto[];
 }

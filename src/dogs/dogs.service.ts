@@ -135,6 +135,17 @@ export class DogsService {
     return this.findOne(id);
   }
 
+  /** Null out destinationId on all dogs in a trip whose destination was removed. */
+  async nullifyRemovedDestinations(tripId: string, removedIds: string[]): Promise<void> {
+    if (!removedIds.length) return;
+    await this.repo
+      .createQueryBuilder()
+      .update(Dog)
+      .set({ destinationId: null })
+      .where('tripId = :tripId AND destinationId IN (:...removedIds)', { tripId, removedIds })
+      .execute();
+  }
+
   /** Update a dog using only whitelisted DTO fields. */
   async update(id: string, data: UpdateDogDto): Promise<Dog> {
     const dog = await this.findOne(id);
@@ -152,6 +163,8 @@ export class DogsService {
     if (data.requestId !== undefined) dog.requestId = data.requestId ?? null;
     if (data.photoUrl !== undefined) dog.photoUrl = data.photoUrl ?? null;
     if (data.documentUrl !== undefined) dog.documentUrl = data.documentUrl ?? null;
+    if (data.destinationId !== undefined) dog.destinationId = data.destinationId ?? null;
+    if (data.receiver !== undefined) dog.receiver = data.receiver ?? null;
     return this.repo.save(dog);
   }
 }

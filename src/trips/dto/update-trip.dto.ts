@@ -1,4 +1,6 @@
-import { IsString, IsIn, IsNumber, IsOptional, IsBoolean, Min, Matches } from 'class-validator';
+import { IsString, IsIn, IsNumber, IsOptional, IsBoolean, IsArray, Min, Matches, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { TripDestinationDto } from './create-trip.dto';
 
 export class UpdateTripDto {
   @IsOptional()
@@ -38,4 +40,10 @@ export class UpdateTripDto {
   @IsOptional()
   @IsBoolean()
   acceptingRequests?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => TripDestinationDto)
+  destinations?: TripDestinationDto[];
 }
