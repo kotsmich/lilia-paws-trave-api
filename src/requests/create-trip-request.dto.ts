@@ -54,6 +54,10 @@ export class DogDto {
   @IsOptional()
   @IsString()
   documentType?: string;
+
+  @IsOptional()
+  @IsString()
+  receiver?: string;
 }
 
 export class CreateTripRequestDto {
