@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { AdminUser } from './admin-user.entity';
+import { AdminUser, AdminRole } from './admin-user.entity';
 
 @Injectable()
 export class AdminSeedService implements OnApplicationBootstrap {
@@ -23,7 +23,7 @@ export class AdminSeedService implements OnApplicationBootstrap {
     const password = this.config.get<string>('ADMIN_PASSWORD')!;
     const passwordHash = await bcrypt.hash(password, 12);
 
-    await this.adminRepo.save({ email, passwordHash });
+    await this.adminRepo.save({ email, passwordHash, role: AdminRole.ADMIN });
     this.logger.log(`Admin account created for ${email}`);
   }
 }

@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { SlidingSessionInterceptor } from './auth/sliding-session.interceptor';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -90,6 +92,9 @@ const HandlebarsAdapter = require('@nestjs-modules/mailer/adapters/handlebars.ad
     RequestsModule,
     ContactModule,
     CalendarModule,
+  ],
+  providers: [
+    { provide: APP_INTERCEPTOR, useClass: SlidingSessionInterceptor },
   ],
 })
 export class AppModule {}
