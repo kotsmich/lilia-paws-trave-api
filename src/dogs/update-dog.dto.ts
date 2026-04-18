@@ -64,5 +64,9 @@ export class UpdateDogDto {
 
   @IsOptional()
   @IsString()
+  pickupLocationId?: string | null;
+
+  @IsOptional()
+  @IsString()
   receiver?: string | null;
 }

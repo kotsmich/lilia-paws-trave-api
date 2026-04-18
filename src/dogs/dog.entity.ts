@@ -44,6 +44,9 @@ export class Dog {
   @Column({ nullable: true, type: 'varchar' })
   destinationId: string | null;
 
+  @Column({ nullable: true, type: 'varchar' })
+  pickupLocationId: string | null;
+
   @UpdateDateColumn()
   updatedAt: Date;
 

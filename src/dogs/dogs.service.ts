@@ -164,7 +164,19 @@ export class DogsService {
     if (data.photoUrl !== undefined) dog.photoUrl = data.photoUrl ?? null;
     if (data.documentUrl !== undefined) dog.documentUrl = data.documentUrl ?? null;
     if (data.destinationId !== undefined) dog.destinationId = data.destinationId ?? null;
+    if (data.pickupLocationId !== undefined) dog.pickupLocationId = data.pickupLocationId ?? null;
     if (data.receiver !== undefined) dog.receiver = data.receiver ?? null;
     return this.repo.save(dog);
+  }
+
+  /** Null out pickupLocationId on all dogs in a trip whose pickup location was removed. */
+  async nullifyRemovedPickupLocations(tripId: string, removedIds: string[]): Promise<void> {
+    if (!removedIds.length) return;
+    await this.repo
+      .createQueryBuilder()
+      .update(Dog)
+      .set({ pickupLocationId: null })
+      .where('tripId = :tripId AND pickupLocationId IN (:...removedIds)', { tripId, removedIds })
+      .execute();
   }
 }

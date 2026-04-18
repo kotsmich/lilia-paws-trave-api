@@ -54,5 +54,9 @@ export class CreateDogDto {
 
   @IsOptional()
   @IsString()
+  pickupLocationId?: string | null;
+
+  @IsOptional()
+  @IsString()
   receiver?: string | null;
 }

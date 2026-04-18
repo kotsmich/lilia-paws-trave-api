@@ -53,4 +53,10 @@ export class CreateTripDto {
   @ValidateNested({ each: true })
   @Type(() => TripDestinationDto)
   destinations?: TripDestinationDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => TripDestinationDto)
+  pickupLocations?: TripDestinationDto[];
 }

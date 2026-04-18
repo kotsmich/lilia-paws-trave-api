@@ -81,6 +81,7 @@ export class TripsService {
     dto.createdAt = trip.createdAt;
     dto.updatedAt = trip.updatedAt;
     dto.destinations = trip.destinations ?? [];
+    dto.pickupLocations = trip.pickupLocations ?? [];
     dto.dogs = trip.dogs;
     dto.requesters = entries;
 
@@ -102,11 +103,20 @@ export class TripsService {
     { id: 'def-dest-12', name: 'Ζυρίχη, Ελβετία' },
   ];
 
+  private static readonly defaultPickupLocations: TripDestination[] = [
+    { id: 'def-pick-01', name: 'Αθήνα, Ελλάδα' },
+    { id: 'def-pick-02', name: 'Θεσσαλονίκη, Ελλάδα' },
+    { id: 'def-pick-03', name: 'Λάρισα, Ελλάδα' },
+    { id: 'def-pick-04', name: 'Βόλος, Ελλάδα' },
+    { id: 'def-pick-05', name: 'Ιωάννινα, Ελλάδα' },
+  ];
+
   /** Create a new trip from validated DTO data. */
   async create(data: CreateTripDto): Promise<Trip> {
     const trip = this.repo.create({
       ...data,
       destinations: data.destinations?.length ? data.destinations : TripsService.defaultDestinations,
+      pickupLocations: data.pickupLocations?.length ? data.pickupLocations : TripsService.defaultPickupLocations,
       spotsAvailable: data.totalCapacity,
       isFull: false,
     });
@@ -140,6 +150,15 @@ export class TripsService {
         await this.dogsService.nullifyRemovedDestinations(id, removedIds);
       }
       trip.destinations = data.destinations;
+    }
+    if (data.pickupLocations !== undefined) {
+      const oldIds = new Set((trip.pickupLocations ?? []).map((d) => d.id));
+      const newIds = new Set(data.pickupLocations.map((d) => d.id));
+      const removedIds = [...oldIds].filter((id) => !newIds.has(id));
+      if (removedIds.length) {
+        await this.dogsService.nullifyRemovedPickupLocations(id, removedIds);
+      }
+      trip.pickupLocations = data.pickupLocations;
     }
 
     const dogsCount = Array.isArray(trip.dogs) ? trip.dogs.length : 0;

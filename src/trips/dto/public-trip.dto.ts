@@ -1,3 +1,5 @@
+import { TripDestination } from '../trip.entity';
+
 export class PublicTripDto {
   id: string;
   date: string;
@@ -10,6 +12,8 @@ export class PublicTripDto {
   spotsAvailable: number;
   acceptingRequests: boolean;
   isFull: boolean;
+  destinations: TripDestination[];
+  pickupLocations: TripDestination[];
 
   static from(trip: {
     id: string;
@@ -23,6 +27,8 @@ export class PublicTripDto {
     spotsAvailable: number;
     acceptingRequests: boolean;
     isFull: boolean;
+    destinations?: TripDestination[];
+    pickupLocations?: TripDestination[];
   }): PublicTripDto {
     const dto = new PublicTripDto();
     dto.id = trip.id;
@@ -36,6 +42,8 @@ export class PublicTripDto {
     dto.spotsAvailable = trip.spotsAvailable;
     dto.acceptingRequests = trip.acceptingRequests;
     dto.isFull = trip.isFull;
+    dto.destinations = trip.destinations ?? [];
+    dto.pickupLocations = trip.pickupLocations ?? [];
     return dto;
   }
 }

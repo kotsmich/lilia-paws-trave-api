@@ -50,6 +50,9 @@ export class Trip {
   @Column({ type: 'simple-json', default: '[]' })
   destinations: TripDestination[];
 
+  @Column({ type: 'simple-json', default: '[]' })
+  pickupLocations: TripDestination[];
+
   @CreateDateColumn()
   createdAt: Date;
 

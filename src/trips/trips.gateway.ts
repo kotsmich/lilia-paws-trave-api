@@ -2,9 +2,9 @@ import { WebSocketGateway, WebSocketServer, OnGatewayConnection } from '@nestjs/
 import { Inject, forwardRef } from '@nestjs/common';
 import { Server, WebSocket } from 'ws';
 import { TripsService } from './trips.service';
-import { Trip } from './trip.entity';
+import { Trip, TripDestination } from './trip.entity';
 
-/** Public availability projection — never includes dogs, requests, notes, or PII. */
+/** Public availability projection — never includes dogs, requests, or PII. */
 interface TripAvailability {
   id: string;
   date: string;
@@ -17,6 +17,8 @@ interface TripAvailability {
   spotsAvailable: number;
   isFull: boolean;
   acceptingRequests: boolean;
+  destinations: TripDestination[];
+  pickupLocations: TripDestination[];
 }
 
 function toAvailability(trip: Trip): TripAvailability {
@@ -32,6 +34,8 @@ function toAvailability(trip: Trip): TripAvailability {
     spotsAvailable: trip.spotsAvailable,
     isFull: trip.isFull,
     acceptingRequests: trip.acceptingRequests,
+    destinations: trip.destinations ?? [],
+    pickupLocations: trip.pickupLocations ?? [],
   };
 }
 
