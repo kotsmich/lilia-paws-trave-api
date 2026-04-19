@@ -4,6 +4,7 @@ import { SlidingSessionInterceptor } from './auth/sliding-session.interceptor';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { MailerModule } from '@nestjs-modules/mailer';
 import * as Joi from 'joi';
 import { join } from 'path';
@@ -14,6 +15,7 @@ import { ContactModule } from './contact/contact.module';
 import { AuthModule } from './auth/auth.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { GatewayModule } from './gateway/gateway.module';
+import { HealthModule } from './health/health.module';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const HandlebarsAdapter = require('@nestjs-modules/mailer/adapters/handlebars.adapter').HandlebarsAdapter;
@@ -30,7 +32,7 @@ const HandlebarsAdapter = require('@nestjs-modules/mailer/adapters/handlebars.ad
         DB_USER: Joi.string().required(),
         DB_PASS: Joi.string().required(),
         DB_NAME: Joi.string().required(),
-        JWT_SECRET: Joi.string().required(),
+        JWT_SECRET: Joi.string().min(32).required(),
         ADMIN_EMAIL: Joi.string().email().required(),
         ADMIN_PASSWORD: Joi.string().min(6).required(),
         MAIL_HOST: Joi.string().default('smtp.gmail.com'),
@@ -60,6 +62,7 @@ const HandlebarsAdapter = require('@nestjs-modules/mailer/adapters/handlebars.ad
         logging: config.get<string>('NODE_ENV') !== 'production',
       }),
     }),
+    ScheduleModule.forRoot(),
     // Global rate limiting: 100 requests per minute default; login overrides to 5
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     MailerModule.forRootAsync({
@@ -85,6 +88,7 @@ const HandlebarsAdapter = require('@nestjs-modules/mailer/adapters/handlebars.ad
         },
       }),
     }),
+    HealthModule,
     GatewayModule,
     AuthModule,
     TripsModule,

@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { join } from 'path';
@@ -18,6 +19,9 @@ async function bootstrap() {
 
   // Serve uploaded files — accessible via /api/uploads/... (proxied by existing /api rules)
   app.useStaticAssets(join(__dirname, '..', 'uploads'), { prefix: '/api/uploads' });
+
+  // Security headers
+  app.use(helmet());
 
   // Cookie parsing (required for HttpOnly JWT cookie auth)
   app.use(cookieParser());

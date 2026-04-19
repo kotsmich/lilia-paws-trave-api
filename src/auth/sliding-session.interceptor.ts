@@ -2,6 +2,7 @@ import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nes
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Observable, tap } from 'rxjs';
+import { randomUUID } from 'crypto';
 import type { Request, Response } from 'express';
 import { SESSION_TTL_MS, SESSION_TTL_SECONDS } from './session.constants';
 
@@ -25,9 +26,9 @@ export class SlidingSessionInterceptor implements NestInterceptor {
         if (!req.user) return;
 
         const token = this.jwtService.sign(
-          { sub: req.user.userId, email: req.user.email },
+          { sub: req.user.userId, email: req.user.email, jti: randomUUID() },
           {
-            secret: this.config.get<string>('JWT_SECRET') ?? 'change-me-in-production',
+            secret: this.config.getOrThrow<string>('JWT_SECRET'),
             expiresIn: SESSION_TTL_SECONDS,
           },
         );

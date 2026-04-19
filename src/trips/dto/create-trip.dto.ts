@@ -2,9 +2,9 @@ import { IsString, IsIn, IsNumber, IsOptional, IsBoolean, IsNotEmpty, IsArray, M
 import { Type } from 'class-transformer';
 
 export class TripDestinationDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  id: string;
+  id?: string;
 
   @IsString()
   @IsNotEmpty()

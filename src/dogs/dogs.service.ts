@@ -31,7 +31,6 @@ export class DogsService {
       requesterEmail: null,
       requesterPhone: null,
       tripId,
-      dogs: [],
       status: 'approved',
     });
     return this.tripRequestRepo.save(requester);
@@ -135,17 +134,6 @@ export class DogsService {
     return this.findOne(id);
   }
 
-  /** Null out destinationId on all dogs in a trip whose destination was removed. */
-  async nullifyRemovedDestinations(tripId: string, removedIds: string[]): Promise<void> {
-    if (!removedIds.length) return;
-    await this.repo
-      .createQueryBuilder()
-      .update(Dog)
-      .set({ destinationId: null })
-      .where('tripId = :tripId AND destinationId IN (:...removedIds)', { tripId, removedIds })
-      .execute();
-  }
-
   /** Update a dog using only whitelisted DTO fields. */
   async update(id: string, data: UpdateDogDto): Promise<Dog> {
     const dog = await this.findOne(id);
@@ -169,14 +157,4 @@ export class DogsService {
     return this.repo.save(dog);
   }
 
-  /** Null out pickupLocationId on all dogs in a trip whose pickup location was removed. */
-  async nullifyRemovedPickupLocations(tripId: string, removedIds: string[]): Promise<void> {
-    if (!removedIds.length) return;
-    await this.repo
-      .createQueryBuilder()
-      .update(Dog)
-      .set({ pickupLocationId: null })
-      .where('tripId = :tripId AND pickupLocationId IN (:...removedIds)', { tripId, removedIds })
-      .execute();
-  }
 }

@@ -1,5 +1,6 @@
 import { Dog } from '../../dogs/dog.entity';
-import { TripDestination } from '../trip.entity';
+import { Destination } from '../destination.entity';
+import { PickupLocation } from '../pickup-location.entity';
 
 export class RequesterEntry {
   /** The originating request ID, or null for manually added dogs */
@@ -23,8 +24,8 @@ export class TripDetailDto {
   acceptingRequests: boolean;
   createdAt: Date;
   updatedAt: Date;
-  destinations: TripDestination[];
-  pickupLocations: TripDestination[];
+  destinations: Destination[];
+  pickupLocations: PickupLocation[];
   dogs: Dog[];
   /** Requesters grouped by name, each with their associated dogs */
   requesters: RequesterEntry[];

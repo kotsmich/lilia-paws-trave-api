@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, DeleteDateColumn, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, DeleteDateColumn, Index } from 'typeorm';
 import { Trip } from '../trips/trip.entity';
+import { Dog } from '../dogs/dog.entity';
 
 @Entity()
 export class TripRequest {
@@ -26,21 +27,8 @@ export class TripRequest {
   @Column({ default: 'pending' })
   status: 'pending' | 'approved' | 'rejected' | 'cancelled';
 
-  @Column({ type: 'jsonb' })
-  dogs: Array<{
-    id: string;
-    name: string;
-    size: string;
-    gender: string;
-    age: number;
-    chipId: string;
-    pickupLocation: string;
-    dropLocation: string;
-    notes?: string;
-    photoUrl?: string | null;
-    documentUrl?: string | null;
-    documentType?: string | null;
-  }>;
+  @OneToMany(() => Dog, (d) => d.request, { cascade: ['insert'], eager: true })
+  dogs: Dog[];
 
   @ManyToOne(() => Trip, (trip) => trip.requests, { onDelete: 'SET NULL', nullable: true })
   trip: Trip;

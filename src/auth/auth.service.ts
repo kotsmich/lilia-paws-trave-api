@@ -2,8 +2,11 @@ import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/co
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { AdminUser, AdminRole } from './admin-user.entity';
+import { RevokedToken } from './revoked-token.entity';
 
 @Injectable()
 export class AuthService {
@@ -11,6 +14,8 @@ export class AuthService {
     private jwtService: JwtService,
     @InjectRepository(AdminUser)
     private readonly adminRepo: Repository<AdminUser>,
+    @InjectRepository(RevokedToken)
+    private readonly revokedTokenRepo: Repository<RevokedToken>,
   ) {}
 
   async login(email: string, password: string): Promise<{ token: string; user: { id: string; email: string; role: AdminRole } }> {
@@ -20,7 +25,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const token = this.jwtService.sign({ sub: admin.id, email: admin.email, role: admin.role });
+    const token = this.jwtService.sign({ sub: admin.id, email: admin.email, role: admin.role, jti: randomUUID() });
     return { token, user: { id: admin.id, email: admin.email, role: admin.role } };
   }
 
@@ -48,8 +53,24 @@ export class AuthService {
     if (existing) throw new ConflictException('Email already in use');
     admin.email = newEmail;
     await this.adminRepo.save(admin);
-    const token = this.jwtService.sign({ sub: admin.id, email: admin.email, role: admin.role });
+    const token = this.jwtService.sign({ sub: admin.id, email: admin.email, role: admin.role, jti: randomUUID() });
     return { token, email: newEmail };
+  }
+
+  async logout(token: string): Promise<void> {
+    try {
+      const payload = this.jwtService.verify<{ jti?: string; exp?: number }>(token);
+      if (payload.jti && payload.exp) {
+        await this.revokedTokenRepo.save({ jti: payload.jti, expiresAt: new Date(payload.exp * 1000) });
+      }
+    } catch {
+      // Already expired or invalid — no revocation needed
+    }
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async cleanupExpiredTokens(): Promise<void> {
+    await this.revokedTokenRepo.createQueryBuilder().delete().where('"expiresAt" < NOW()').execute();
   }
 
   async listUsers(): Promise<{ id: string; email: string; role: AdminRole }[]> {

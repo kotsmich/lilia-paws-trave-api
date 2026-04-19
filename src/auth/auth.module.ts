@@ -8,6 +8,7 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { AdminGuard } from './admin.guard';
 import { AdminUser } from './admin-user.entity';
+import { RevokedToken } from './revoked-token.entity';
 import { AdminSeedService } from './admin-seed.service';
 import { SlidingSessionInterceptor } from './sliding-session.interceptor';
 import { SESSION_TTL_SECONDS } from './session.constants';
@@ -15,12 +16,12 @@ import { SESSION_TTL_SECONDS } from './session.constants';
 @Module({
   imports: [
     PassportModule,
-    TypeOrmModule.forFeature([AdminUser]),
+    TypeOrmModule.forFeature([AdminUser, RevokedToken]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET') ?? 'change-me-in-production',
+        secret: config.getOrThrow<string>('JWT_SECRET'),
         signOptions: { expiresIn: SESSION_TTL_SECONDS },
       }),
     }),

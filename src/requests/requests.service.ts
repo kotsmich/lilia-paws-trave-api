@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import { randomUUID } from 'crypto';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -45,7 +44,25 @@ export class RequestsService {
       requesterEmail: data.requesterEmail,
       requesterPhone: data.requesterPhone,
       tripId: data.tripId,
-      dogs: data.dogs.map((d) => ({ ...d, id: randomUUID() })),
+      dogs: data.dogs.map((d) =>
+        this.dogRepo.create({
+          name: d.name,
+          size: d.size,
+          gender: d.gender,
+          age: d.age,
+          chipId: d.chipId,
+          pickupLocation: d.pickupLocation,
+          dropLocation: d.dropLocation,
+          notes: d.notes,
+          photoUrl: d.photoUrl ?? null,
+          documentUrl: d.documentUrl ?? null,
+          documentType: d.documentType ?? null,
+          receiver: d.receiver,
+          requesterName: data.requesterName,
+          requesterEmail: data.requesterEmail,
+          requesterPhone: data.requesterPhone,
+        }),
+      ),
     });
     const saved = await this.repo.save(req);
 
@@ -194,7 +211,7 @@ export class RequestsService {
     try {
       const req = await queryRunner.manager.findOne(TripRequest, {
         where: { id },
-        relations: ['trip'],
+        relations: ['trip', 'dogs'],
       });
       if (!req) throw new NotFoundException('Request not found');
 
@@ -211,29 +228,15 @@ export class RequestsService {
         throw new BadRequestException('Not enough spots available');
       }
 
-      // Persist each dog from the request JSON as a new Dog entity linked to the trip
-      const newDogs = queryRunner.manager.create(
-        Dog,
-        req.dogs.map((d) => ({
-          name: d.name,
-          size: d.size as 'small' | 'medium' | 'large',
-          gender: d.gender as 'male' | 'female',
-          age: d.age,
-          chipId: d.chipId,
-          pickupLocation: d.pickupLocation,
-          dropLocation: d.dropLocation,
-          notes: d.notes,
-          photoUrl: d.photoUrl ?? null,
-          documentUrl: d.documentUrl ?? null,
-          documentType: d.documentType ?? null,
-          requesterName: req.requesterName,
-          requesterEmail: req.requesterEmail,
-          requesterPhone: req.requesterPhone,
-          requestId: req.id,
-          trip,
-        })),
-      );
-      await queryRunner.manager.save(Dog, newDogs);
+      // Link the pre-existing Dog entities (created at request time) to the approved trip
+      if (req.dogs.length) {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .update(Dog)
+          .set({ trip })
+          .whereInIds(req.dogs.map((d) => d.id))
+          .execute();
+      }
 
       // Reload dogs count within transaction
       const dogsInTrip = await queryRunner.manager.find(Dog, { where: { trip: { id: trip.id } } });

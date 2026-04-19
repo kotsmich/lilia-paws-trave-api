@@ -34,7 +34,12 @@ export class AuthController {
   @ApiOperation({ summary: 'Clear the auth cookie and end the session' })
   @Post('logout')
   @HttpCode(204)
-  logout(@Res({ passthrough: true }) res: Response): void {
+  async logout(
+    @Request() req: { cookies: Record<string, string> },
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    const token = req.cookies?.['admin_token'];
+    if (token) await this.authService.logout(token);
     res.clearCookie('admin_token', { httpOnly: true, sameSite: 'strict' });
   }
 

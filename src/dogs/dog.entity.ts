@@ -1,6 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, UpdateDateColumn, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, UpdateDateColumn, Index } from 'typeorm';
 import { Trip } from '../trips/trip.entity';
 import { TripRequest } from '../requests/trip-request.entity';
+import { Destination } from '../trips/destination.entity';
+import { PickupLocation } from '../trips/pickup-location.entity';
 
 @Entity()
 export class Dog {
@@ -44,8 +46,16 @@ export class Dog {
   @Column({ nullable: true, type: 'varchar' })
   destinationId: string | null;
 
+  @ManyToOne(() => Destination, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'destinationId' })
+  destination: Destination | null;
+
   @Column({ nullable: true, type: 'varchar' })
   pickupLocationId: string | null;
+
+  @ManyToOne(() => PickupLocation, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'pickupLocationId' })
+  tripPickupLocation: PickupLocation | null;
 
   @UpdateDateColumn()
   updatedAt: Date;
@@ -59,8 +69,8 @@ export class Dog {
   @Column({ type: 'text', nullable: true })
   requesterPhone: string | null;
 
-  @ManyToOne(() => Trip, (trip) => trip.dogs, { onDelete: 'CASCADE' })
-  trip: Trip;
+  @ManyToOne(() => Trip, (trip) => trip.dogs, { onDelete: 'CASCADE', nullable: true })
+  trip: Trip | null;
 
   @Index()
   @Column({ nullable: true, type: 'varchar' })
@@ -69,6 +79,7 @@ export class Dog {
   @Column({ nullable: true, type: 'varchar' })
   receiver: string | null;
 
-  @ManyToOne(() => TripRequest, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => TripRequest, (r) => r.dogs, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'requestId' })
   request: TripRequest | null;
 }

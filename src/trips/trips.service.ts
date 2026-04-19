@@ -3,14 +3,18 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
-import { Trip, TripDestination } from './trip.entity';
+import { Trip } from './trip.entity';
+import { Destination } from './destination.entity';
+import { PickupLocation } from './pickup-location.entity';
 import { TripRequest } from '../requests/trip-request.entity';
 import { TripsGateway } from './trips.gateway';
 import { AppGateway } from '../gateway/app.gateway';
-import { DogsService } from '../dogs/dogs.service';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { TripDetailDto, RequesterEntry } from './dto/trip-detail.dto';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (v: string | undefined): v is string => !!v && UUID_RE.test(v);
 
 @Injectable()
 export class TripsService {
@@ -19,12 +23,13 @@ export class TripsService {
   constructor(
     @InjectRepository(Trip) private repo: Repository<Trip>,
     @InjectRepository(TripRequest) private requestRepo: Repository<TripRequest>,
+    @InjectRepository(Destination) private destinationRepo: Repository<Destination>,
+    @InjectRepository(PickupLocation) private pickupLocationRepo: Repository<PickupLocation>,
     @Inject(forwardRef(() => TripsGateway))
     private readonly tripsGateway: TripsGateway,
     private readonly appGateway: AppGateway,
     private readonly mailerService: MailerService,
     private readonly config: ConfigService,
-    private readonly dogsService: DogsService,
   ) {}
 
   /** Retrieve all trips with their dogs. */
@@ -88,35 +93,32 @@ export class TripsService {
     return dto;
   }
 
-  private static readonly defaultDestinations: TripDestination[] = [
-    { id: 'def-dest-01', name: 'Αθήνα, Ελλάδα' },
-    { id: 'def-dest-02', name: 'Θεσσαλονίκη, Ελλάδα' },
-    { id: 'def-dest-03', name: 'Βερολίνο, Γερμανία' },
-    { id: 'def-dest-04', name: 'Μόναχο, Γερμανία' },
-    { id: 'def-dest-05', name: 'Αμβούργο, Γερμανία' },
-    { id: 'def-dest-06', name: 'Παρίσι, Γαλλία' },
-    { id: 'def-dest-07', name: 'Άμστερνταμ, Ολλανδία' },
-    { id: 'def-dest-08', name: 'Ρώμη, Ιταλία' },
-    { id: 'def-dest-09', name: 'Βαρκελώνη, Ισπανία' },
-    { id: 'def-dest-10', name: 'Βιέννη, Αυστρία' },
-    { id: 'def-dest-11', name: 'Βρυξέλλες, Βέλγιο' },
-    { id: 'def-dest-12', name: 'Ζυρίχη, Ελβετία' },
+  private static readonly defaultDestinationNames = [
+    'Αθήνα, Ελλάδα', 'Θεσσαλονίκη, Ελλάδα', 'Βερολίνο, Γερμανία',
+    'Μόναχο, Γερμανία', 'Αμβούργο, Γερμανία', 'Παρίσι, Γαλλία',
+    'Άμστερνταμ, Ολλανδία', 'Ρώμη, Ιταλία', 'Βαρκελώνη, Ισπανία',
+    'Βιέννη, Αυστρία', 'Βρυξέλλες, Βέλγιο', 'Ζυρίχη, Ελβετία',
   ];
 
-  private static readonly defaultPickupLocations: TripDestination[] = [
-    { id: 'def-pick-01', name: 'Αθήνα, Ελλάδα' },
-    { id: 'def-pick-02', name: 'Θεσσαλονίκη, Ελλάδα' },
-    { id: 'def-pick-03', name: 'Λάρισα, Ελλάδα' },
-    { id: 'def-pick-04', name: 'Βόλος, Ελλάδα' },
-    { id: 'def-pick-05', name: 'Ιωάννινα, Ελλάδα' },
+  private static readonly defaultPickupLocationNames = [
+    'Αθήνα, Ελλάδα', 'Θεσσαλονίκη, Ελλάδα', 'Λάρισα, Ελλάδα',
+    'Βόλος, Ελλάδα', 'Ιωάννινα, Ελλάδα',
   ];
 
   /** Create a new trip from validated DTO data. */
   async create(data: CreateTripDto): Promise<Trip> {
+    const destNames = data.destinations?.length
+      ? data.destinations.map((d) => d.name)
+      : TripsService.defaultDestinationNames;
+    const pickNames = data.pickupLocations?.length
+      ? data.pickupLocations.map((p) => p.name)
+      : TripsService.defaultPickupLocationNames;
+    const destinations = destNames.map((name) => this.destinationRepo.create({ name }));
+    const pickupLocations = pickNames.map((name) => this.pickupLocationRepo.create({ name }));
     const trip = this.repo.create({
       ...data,
-      destinations: data.destinations?.length ? data.destinations : TripsService.defaultDestinations,
-      pickupLocations: data.pickupLocations?.length ? data.pickupLocations : TripsService.defaultPickupLocations,
+      destinations,
+      pickupLocations,
       spotsAvailable: data.totalCapacity,
       isFull: false,
     });
@@ -143,22 +145,20 @@ export class TripsService {
     if (data.totalCapacity !== undefined) trip.totalCapacity = data.totalCapacity;
     if (data.acceptingRequests !== undefined) trip.acceptingRequests = data.acceptingRequests;
     if (data.destinations !== undefined) {
-      const oldIds = new Set((trip.destinations ?? []).map((d) => d.id));
-      const newIds = new Set(data.destinations.map((d) => d.id));
-      const removedIds = [...oldIds].filter((id) => !newIds.has(id));
-      if (removedIds.length) {
-        await this.dogsService.nullifyRemovedDestinations(id, removedIds);
-      }
-      trip.destinations = data.destinations;
+      const newIds = new Set(data.destinations.filter((d) => isUuid(d.id)).map((d) => d.id!));
+      const toDelete = (trip.destinations ?? []).filter((d) => !newIds.has(d.id));
+      if (toDelete.length) await this.destinationRepo.remove(toDelete);
+      trip.destinations = data.destinations.map((d) =>
+        this.destinationRepo.create({ id: isUuid(d.id) ? d.id : undefined, name: d.name }),
+      );
     }
     if (data.pickupLocations !== undefined) {
-      const oldIds = new Set((trip.pickupLocations ?? []).map((d) => d.id));
-      const newIds = new Set(data.pickupLocations.map((d) => d.id));
-      const removedIds = [...oldIds].filter((id) => !newIds.has(id));
-      if (removedIds.length) {
-        await this.dogsService.nullifyRemovedPickupLocations(id, removedIds);
-      }
-      trip.pickupLocations = data.pickupLocations;
+      const newIds = new Set(data.pickupLocations.filter((p) => isUuid(p.id)).map((p) => p.id!));
+      const toDelete = (trip.pickupLocations ?? []).filter((p) => !newIds.has(p.id));
+      if (toDelete.length) await this.pickupLocationRepo.remove(toDelete);
+      trip.pickupLocations = data.pickupLocations.map((p) =>
+        this.pickupLocationRepo.create({ id: isUuid(p.id) ? p.id : undefined, name: p.name }),
+      );
     }
 
     const dogsCount = Array.isArray(trip.dogs) ? trip.dogs.length : 0;

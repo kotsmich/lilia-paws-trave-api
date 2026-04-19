@@ -1,11 +1,10 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 import { Dog } from '../dogs/dog.entity';
 import { TripRequest } from '../requests/trip-request.entity';
+import { Destination } from './destination.entity';
+import { PickupLocation } from './pickup-location.entity';
 
-export interface TripDestination {
-  id: string;
-  name: string;
-}
+export type TripDestination = { id: string; name: string };
 
 @Entity()
 export class Trip {
@@ -47,11 +46,11 @@ export class Trip {
   @Column({ default: true })
   acceptingRequests: boolean;
 
-  @Column({ type: 'simple-json', default: '[]' })
-  destinations: TripDestination[];
+  @OneToMany(() => Destination, (d) => d.trip, { cascade: ['insert'], eager: true })
+  destinations: Destination[];
 
-  @Column({ type: 'simple-json', default: '[]' })
-  pickupLocations: TripDestination[];
+  @OneToMany(() => PickupLocation, (p) => p.trip, { cascade: ['insert'], eager: true })
+  pickupLocations: PickupLocation[];
 
   @CreateDateColumn()
   createdAt: Date;
