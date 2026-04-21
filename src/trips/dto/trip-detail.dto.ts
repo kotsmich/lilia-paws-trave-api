@@ -3,9 +3,12 @@ import { Destination } from '../destination.entity';
 import { PickupLocation } from '../pickup-location.entity';
 
 export class RequesterEntry {
-  /** The originating request ID, or null for manually added dogs */
-  requestId: string | null;
+  requesterId: string;
   name: string;
+  email: string | null;
+  phone: string | null;
+  /** Set when the requester originated from a formal TripRequest. */
+  sourceRequestId: string | null;
   dogs: Dog[];
 }
 
@@ -27,6 +30,5 @@ export class TripDetailDto {
   destinations: Destination[];
   pickupLocations: PickupLocation[];
   dogs: Dog[];
-  /** Requesters grouped by name, each with their associated dogs */
   requesters: RequesterEntry[];
 }

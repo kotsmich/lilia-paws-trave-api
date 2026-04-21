@@ -6,6 +6,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { TripRequest } from './trip-request.entity';
 import { Trip } from '../trips/trip.entity';
 import { Dog } from '../dogs/dog.entity';
+import { Requester } from '../requesters/requester.entity';
 import { CreateTripRequestDto } from './create-trip-request.dto';
 import { AppGateway } from '../gateway/app.gateway';
 import { TripsGateway } from '../trips/trips.gateway';
@@ -18,6 +19,7 @@ export class RequestsService {
     @InjectRepository(TripRequest) private repo: Repository<TripRequest>,
     @InjectRepository(Trip) private tripRepo: Repository<Trip>,
     @InjectRepository(Dog) private dogRepo: Repository<Dog>,
+    @InjectRepository(Requester) private requesterRepo: Repository<Requester>,
     @InjectDataSource() private dataSource: DataSource,
     private readonly appGateway: AppGateway,
     private readonly tripsGateway: TripsGateway,
@@ -25,14 +27,14 @@ export class RequestsService {
     private readonly config: ConfigService,
   ) {}
 
-  /** Retrieve all requests with trip relation, ordered by most recent. */
+  /** Retrieve all requests with dogs, ordered by most recent. */
   findAll(): Promise<TripRequest[]> {
-    return this.repo.find({ relations: ['trip'], order: { submittedAt: 'DESC' } });
+    return this.repo.find({ relations: ['dogs'], order: { submittedAt: 'DESC' } });
   }
 
   /** Retrieve a single request by ID. */
   async findOne(id: string): Promise<TripRequest> {
-    const req = await this.repo.findOne({ where: { id }, relations: ['trip'] });
+    const req = await this.repo.findOne({ where: { id }, relations: ['trip', 'dogs'] });
     if (!req) throw new NotFoundException('Request not found');
     return req;
   }
@@ -44,27 +46,28 @@ export class RequestsService {
       requesterEmail: data.requesterEmail,
       requesterPhone: data.requesterPhone,
       tripId: data.tripId,
-      dogs: data.dogs.map((d) =>
-        this.dogRepo.create({
-          name: d.name,
-          size: d.size,
-          gender: d.gender,
-          age: d.age,
-          chipId: d.chipId,
-          pickupLocation: d.pickupLocation,
-          dropLocation: d.dropLocation,
-          notes: d.notes,
-          photoUrl: d.photoUrl ?? null,
-          documentUrl: d.documentUrl ?? null,
-          documentType: d.documentType ?? null,
-          receiver: d.receiver,
-          requesterName: data.requesterName,
-          requesterEmail: data.requesterEmail,
-          requesterPhone: data.requesterPhone,
-        }),
-      ),
     });
     const saved = await this.repo.save(req);
+
+    // Create dogs and link them to the request via requestId (used by the approval flow)
+    const dogs = this.dogRepo.create(
+      data.dogs.map((d) => ({
+        name: d.name,
+        size: d.size,
+        gender: d.gender,
+        age: d.age,
+        chipId: d.chipId,
+        pickupLocation: d.pickupLocation,
+        dropLocation: d.dropLocation,
+        notes: d.notes,
+        photoUrl: d.photoUrl ?? null,
+        documentUrl: d.documentUrl ?? null,
+        documentType: d.documentType ?? null,
+        receiver: d.receiver ?? null,
+        requestId: saved.id,
+      })),
+    );
+    const savedDogs = await this.dogRepo.save(dogs);
 
     this.appGateway.emitNewRequest(saved);
 
@@ -87,7 +90,7 @@ export class RequestsService {
           requesterName: saved.requesterName,
           requesterEmail: saved.requesterEmail,
           requesterPhone: saved.requesterPhone,
-          dogsCount: saved.dogs?.length ?? 0,
+          dogsCount: savedDogs.length,
           submittedAt: new Date(saved.submittedAt).toLocaleString(),
           adminUrl: adminAppUrl,
         },
@@ -98,7 +101,7 @@ export class RequestsService {
           `Name: ${saved.requesterName}`,
           `Email: ${saved.requesterEmail}`,
           `Phone: ${saved.requesterPhone}`,
-          `Dogs: ${saved.dogs?.length ?? 0} dog(s)`,
+          `Dogs: ${savedDogs.length} dog(s)`,
           ``,
           `Review in Admin Panel: ${adminAppUrl}/admin/requests`,
           ``,
@@ -112,7 +115,7 @@ export class RequestsService {
 
     // Confirm receipt to the requester (skip if no email — admin-created requester)
     if (saved.requesterEmail) try {
-      const dogLines = (saved.dogs ?? []).map((d) =>
+      const dogLines = savedDogs.map((d) =>
         [
           `  - ${d.name} (${d.size}, ${d.age} yr(s))`,
           `    Chip ID: ${d.chipId}`,
@@ -131,7 +134,7 @@ export class RequestsService {
           requesterName: saved.requesterName,
           tripRoute,
           tripDate,
-          dogs: saved.dogs ?? [],
+          dogs: savedDogs,
         },
         text: [
           `Hi ${saved.requesterName},`,
@@ -202,7 +205,7 @@ export class RequestsService {
     return saved;
   }
 
-  /** Approve a request: add dogs to trip in a transaction and update capacity. */
+  /** Approve a request: create a Requester, link dogs, add them to the trip, update capacity. */
   async approveRequest(id: string): Promise<{ request: TripRequest; trip: Trip }> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -211,7 +214,7 @@ export class RequestsService {
     try {
       const req = await queryRunner.manager.findOne(TripRequest, {
         where: { id },
-        relations: ['trip', 'dogs'],
+        relations: ['trip'],
       });
       if (!req) throw new NotFoundException('Request not found');
 
@@ -224,23 +227,37 @@ export class RequestsService {
       if (trip.isFull) {
         throw new BadRequestException('Trip is full');
       }
-      if (trip.spotsAvailable < req.dogs.length) {
+
+      // Find the dogs that belong to this request via the internal requestId FK
+      const requestDogs = await queryRunner.manager.find(Dog, { where: { requestId: req.id } });
+
+      if (trip.spotsAvailable < requestDogs.length) {
         throw new BadRequestException('Not enough spots available');
       }
 
-      // Link the pre-existing Dog entities (created at request time) to the approved trip
-      if (req.dogs.length) {
+      // Create a Requester from the TripRequest data
+      const requester = queryRunner.manager.create(Requester, {
+        name: req.requesterName,
+        email: req.requesterEmail,
+        phone: req.requesterPhone,
+        tripId: trip.id,
+        sourceRequestId: req.id,
+      });
+      const savedRequester = await queryRunner.manager.save(Requester, requester);
+
+      // Link dogs to the trip and the new Requester
+      if (requestDogs.length) {
         await queryRunner.manager
           .createQueryBuilder()
           .update(Dog)
-          .set({ trip })
-          .whereInIds(req.dogs.map((d) => d.id))
+          .set({ trip, requesterId: savedRequester.id })
+          .whereInIds(requestDogs.map((d) => d.id))
           .execute();
       }
 
       // Reload dogs count within transaction
       const dogsInTrip = await queryRunner.manager.find(Dog, { where: { trip: { id: trip.id } } });
-      const newSpotsAvailable = Math.max(0, trip.spotsAvailable - req.dogs.length);
+      const newSpotsAvailable = Math.max(0, trip.spotsAvailable - requestDogs.length);
       const isFull = dogsInTrip.length >= trip.totalCapacity;
 
       // Update trip capacity fields

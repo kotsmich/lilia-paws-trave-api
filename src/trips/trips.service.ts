@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException, Inject, forwardRef, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 import { Trip } from './trip.entity';
 import { Destination } from './destination.entity';
 import { PickupLocation } from './pickup-location.entity';
 import { TripRequest } from '../requests/trip-request.entity';
+import { Requester } from '../requesters/requester.entity';
 import { TripsGateway } from './trips.gateway';
 import { AppGateway } from '../gateway/app.gateway';
 import { CreateTripDto } from './dto/create-trip.dto';
@@ -23,6 +24,7 @@ export class TripsService {
   constructor(
     @InjectRepository(Trip) private repo: Repository<Trip>,
     @InjectRepository(TripRequest) private requestRepo: Repository<TripRequest>,
+    @InjectRepository(Requester) private requesterRepo: Repository<Requester>,
     @InjectRepository(Destination) private destinationRepo: Repository<Destination>,
     @InjectRepository(PickupLocation) private pickupLocationRepo: Repository<PickupLocation>,
     @Inject(forwardRef(() => TripsGateway))
@@ -44,31 +46,37 @@ export class TripsService {
     return trip;
   }
 
-  /** Retrieve a trip for the admin detail view with requesters grouped by name. */
+  /** Retrieve a trip for the admin detail view with requesters grouped by requesterId. */
   async findOneDetail(id: string): Promise<TripDetailDto> {
     const trip = await this.findOne(id);
 
-    const entries: RequesterEntry[] = [];
+    // Group dogs by their Requester — every dog on a trip must have a requesterId
+    const requesterMap = new Map<string, RequesterEntry>();
+    for (const dog of trip.dogs.filter((d) => d.requesterId !== null)) {
+      const rid = dog.requesterId as string;
+      if (!requesterMap.has(rid)) {
+        requesterMap.set(rid, { requesterId: rid, name: '', email: null, phone: null, sourceRequestId: null, dogs: [] });
+      }
+      requesterMap.get(rid)!.dogs.push(dog);
+    }
 
-    // One entry per approved request that still has dogs, keyed by request.id
-    for (const req of trip.requests.filter((r) => r.status === 'approved')) {
-      const reqDogs = trip.dogs.filter((d) => d.requestId === req.id);
-      if (reqDogs.length === 0) continue;
-      entries.push({
-        requestId: req.id,
-        name: req.requesterName,
-        dogs: reqDogs,
+    // Enrich requester entries with name/email/phone from the Requester records
+    if (requesterMap.size > 0) {
+      const requesters = await this.requesterRepo.find({
+        where: { id: In(Array.from(requesterMap.keys())) },
       });
+      for (const r of requesters) {
+        const entry = requesterMap.get(r.id);
+        if (entry) {
+          entry.name = r.name;
+          entry.email = r.email;
+          entry.phone = r.phone;
+          entry.sourceRequestId = r.sourceRequestId;
+        }
+      }
     }
 
-    // Manually added dogs (no requestId) grouped by requesterName
-    const manualMap = new Map<string, RequesterEntry>();
-    for (const dog of trip.dogs.filter((d) => d.requestId === null && d.requesterName !== null)) {
-      const name = dog.requesterName as string;
-      if (!manualMap.has(name)) manualMap.set(name, { requestId: null, name, dogs: [] });
-      manualMap.get(name)!.dogs.push(dog);
-    }
-    entries.push(...manualMap.values());
+    const entries = Array.from(requesterMap.values());
 
     const dto = new TripDetailDto();
     dto.id = trip.id;

@@ -3,8 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Dog } from './dog.entity';
 import { Trip } from '../trips/trip.entity';
-import { TripRequest } from '../requests/trip-request.entity';
+import { Requester } from '../requesters/requester.entity';
 import { CreateDogDto } from './create-dog.dto';
+import { BulkCreateDogDto } from './bulk-create-dog.dto';
 import { UpdateDogDto } from './update-dog.dto';
 
 @Injectable()
@@ -12,7 +13,7 @@ export class DogsService {
   constructor(
     @InjectRepository(Dog) private repo: Repository<Dog>,
     @InjectRepository(Trip) private tripRepo: Repository<Trip>,
-    @InjectRepository(TripRequest) private tripRequestRepo: Repository<TripRequest>,
+    @InjectRepository(Requester) private requesterRepo: Repository<Requester>,
   ) {}
 
   private async recalculateTrip(tripId: string): Promise<void> {
@@ -24,35 +25,32 @@ export class DogsService {
     await this.tripRepo.save(trip);
   }
 
-  /** Create an admin-only TripRequest entry with just a name (no email/phone required). */
-  private async createAdminRequester(tripId: string, name: string): Promise<TripRequest> {
-    const requester = this.tripRequestRepo.create({
-      requesterName: name,
-      requesterEmail: null,
-      requesterPhone: null,
+  /** Create a Requester entry for an admin-added dog (no originating TripRequest). */
+  async createAdminRequester(tripId: string, name: string): Promise<Requester> {
+    const requester = this.requesterRepo.create({
+      name,
+      email: null,
+      phone: null,
       tripId,
-      status: 'approved',
+      sourceRequestId: null,
     });
-    return this.tripRequestRepo.save(requester);
+    return this.requesterRepo.save(requester);
   }
 
   /** Create a new dog and associate it with a trip. */
   async create(tripId: string, data: CreateDogDto): Promise<Dog> {
-    const { newRequesterName, requestId: dtoRequestId, ...dogData } = data;
+    const { newRequesterName, requesterId: dtoRequesterId, ...dogData } = data;
 
-    let resolvedRequestId: string | null = dtoRequestId ?? null;
-    let resolvedRequesterName = dogData.requesterName ?? null;
+    let resolvedRequesterId: string | null = dtoRequesterId ?? null;
 
     if (newRequesterName) {
       const requester = await this.createAdminRequester(tripId, newRequesterName);
-      resolvedRequestId = requester.id;
-      resolvedRequesterName = newRequesterName;
+      resolvedRequesterId = requester.id;
     }
 
     const dog = this.repo.create({
       ...dogData,
-      requesterName: resolvedRequesterName,
-      requestId: resolvedRequestId,
+      requesterId: resolvedRequesterId,
       trip: { id: tripId } as any,
     });
     const saved = await this.repo.save(dog);
@@ -60,34 +58,21 @@ export class DogsService {
     return saved;
   }
 
-  /** Bulk-create multiple dogs and associate them with a trip. */
-  async createMany(tripId: string, data: CreateDogDto[]): Promise<Dog[]> {
-    // Group unique newRequesterName values and create one TripRequest per unique name
-    const nameToRequestId = new Map<string, string>();
-    for (const item of data) {
-      if (item.newRequesterName && !nameToRequestId.has(item.newRequesterName)) {
-        const requester = await this.createAdminRequester(tripId, item.newRequesterName);
-        nameToRequestId.set(item.newRequesterName, requester.id);
-      }
+  /** Bulk-create multiple dogs and associate them with a trip, all sharing one requester. */
+  async createMany(tripId: string, data: BulkCreateDogDto): Promise<Dog[]> {
+    let resolvedRequesterId: string | null = data.requesterId ?? null;
+
+    if (data.newRequesterName) {
+      const requester = await this.createAdminRequester(tripId, data.newRequesterName);
+      resolvedRequesterId = requester.id;
     }
 
     const dogs = this.repo.create(
-      data.map(({ newRequesterName, requestId: dtoRequestId, ...dogData }) => {
-        let resolvedRequestId: string | null = dtoRequestId ?? null;
-        let resolvedRequesterName = dogData.requesterName ?? null;
-
-        if (newRequesterName) {
-          resolvedRequestId = nameToRequestId.get(newRequesterName) ?? null;
-          resolvedRequesterName = newRequesterName;
-        }
-
-        return {
-          ...dogData,
-          requesterName: resolvedRequesterName,
-          requestId: resolvedRequestId,
-          trip: { id: tripId } as any,
-        };
-      }),
+      data.dogs.map(dogData => ({
+        ...dogData,
+        requesterId: resolvedRequesterId,
+        trip: { id: tripId } as any,
+      })),
     );
     const saved = await this.repo.save(dogs);
     await this.recalculateTrip(tripId);
@@ -145,10 +130,7 @@ export class DogsService {
     if (data.pickupLocation !== undefined) dog.pickupLocation = data.pickupLocation;
     if (data.dropLocation !== undefined) dog.dropLocation = data.dropLocation;
     if (data.notes !== undefined) dog.notes = data.notes;
-    if (data.requesterName !== undefined) dog.requesterName = data.requesterName ?? null;
-    if (data.requesterEmail !== undefined) dog.requesterEmail = data.requesterEmail ?? null;
-    if (data.requesterPhone !== undefined) dog.requesterPhone = data.requesterPhone ?? null;
-    if (data.requestId !== undefined) dog.requestId = data.requestId ?? null;
+    if (data.requesterId !== undefined) dog.requesterId = data.requesterId ?? null;
     if (data.photoUrl !== undefined) dog.photoUrl = data.photoUrl ?? null;
     if (data.documentUrl !== undefined) dog.documentUrl = data.documentUrl ?? null;
     if (data.destinationId !== undefined) dog.destinationId = data.destinationId ?? null;
@@ -156,5 +138,4 @@ export class DogsService {
     if (data.receiver !== undefined) dog.receiver = data.receiver ?? null;
     return this.repo.save(dog);
   }
-
 }

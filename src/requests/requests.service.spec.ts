@@ -7,6 +7,7 @@ import { RequestsService } from './requests.service';
 import { TripRequest } from './trip-request.entity';
 import { Trip } from '../trips/trip.entity';
 import { Dog } from '../dogs/dog.entity';
+import { Requester } from '../requesters/requester.entity';
 import { AppGateway } from '../gateway/app.gateway';
 import { TripsGateway } from '../trips/trips.gateway';
 
@@ -25,19 +26,35 @@ function makeTripRequest(overrides: Partial<TripRequest> = {}): TripRequest {
     status: 'pending',
     tripId: 'trip-1',
     trip: null as any,
-    dogs: [
-      {
-        name: 'Buddy',
-        size: 'medium',
-        age: 3,
-        chipId: 'CHIP001',
-        pickupLocation: 'Berlin',
-        dropLocation: 'Paris',
-        notes: '',
-      },
-    ],
+    adminNote: null,
     ...overrides,
   } as TripRequest;
+}
+
+function makeDog(overrides: Partial<Dog> = {}): Dog {
+  return {
+    id: 'dog-1',
+    name: 'Buddy',
+    size: 'medium',
+    gender: 'male',
+    age: 3,
+    chipId: 'CHIP001',
+    pickupLocation: 'Berlin',
+    dropLocation: 'Paris',
+    notes: '',
+    requestId: 'req-1',
+    requesterId: null,
+    photoUrl: null,
+    documentUrl: null,
+    documentType: null,
+    destinationId: null,
+    pickupLocationId: null,
+    receiver: null,
+    trip: null as any,
+    requester: null,
+    updatedAt: new Date(),
+    ...overrides,
+  } as Dog;
 }
 
 function makeTrip(overrides: Partial<Trip> = {}): Trip {
@@ -99,6 +116,7 @@ describe('RequestsService', () => {
   let repo: ReturnType<typeof createMockRepository>;
   let tripRepo: ReturnType<typeof createMockRepository>;
   let dogRepo: ReturnType<typeof createMockRepository>;
+  let requesterRepo: ReturnType<typeof createMockRepository>;
   let queryRunner: ReturnType<typeof createMockQueryRunner>;
   let appGateway: { emitNewRequest: jest.Mock; emitRequestStatusUpdated: jest.Mock };
   let tripsGateway: { broadcastTrips: jest.Mock };
@@ -109,6 +127,7 @@ describe('RequestsService', () => {
     repo = createMockRepository();
     tripRepo = createMockRepository();
     dogRepo = createMockRepository();
+    requesterRepo = createMockRepository();
     queryRunner = createMockQueryRunner();
 
     appGateway = {
@@ -125,6 +144,7 @@ describe('RequestsService', () => {
         { provide: getRepositoryToken(TripRequest), useValue: repo },
         { provide: getRepositoryToken(Trip), useValue: tripRepo },
         { provide: getRepositoryToken(Dog), useValue: dogRepo },
+        { provide: getRepositoryToken(Requester), useValue: requesterRepo },
         {
           provide: getDataSourceToken(),
           useValue: { createQueryRunner: jest.fn().mockReturnValue(queryRunner) },
@@ -185,20 +205,24 @@ describe('RequestsService', () => {
     beforeEach(() => {
       request = makeTripRequest();
       trip = makeTrip();
-      const createdDogs = request.dogs.map((d) => ({ ...d, trip }));
-      const updatedTrip = makeTrip({ dogs: createdDogs as any });
+      const requestDogs = [makeDog({ requestId: request.id })];
+      const savedRequester = { id: 'requester-1', name: request.requesterName, email: request.requesterEmail, phone: request.requesterPhone, tripId: trip.id, sourceRequestId: request.id };
+      const updatedTrip = makeTrip({ dogs: requestDogs as any });
 
       // queryRunner.manager mocks
       queryRunner.manager.findOne
-        .mockResolvedValueOnce(request) // first call: find TripRequest
-        .mockResolvedValueOnce(trip);   // second call: find Trip
+        .mockResolvedValueOnce(request)  // find TripRequest
+        .mockResolvedValueOnce(trip);    // find Trip
 
-      queryRunner.manager.create.mockReturnValue(createdDogs);
+      queryRunner.manager.find
+        .mockResolvedValueOnce(requestDogs) // find dogs by requestId
+        .mockResolvedValueOnce(requestDogs); // reload dogs in trip for capacity calc
+
+      queryRunner.manager.create.mockReturnValue(savedRequester);
       queryRunner.manager.save
-        .mockResolvedValueOnce(createdDogs) // save dogs
-        .mockResolvedValueOnce({ ...request, status: 'approved' }); // save request
+        .mockResolvedValueOnce(savedRequester)                    // save Requester
+        .mockResolvedValueOnce({ ...request, status: 'approved' }); // save TripRequest
 
-      queryRunner.manager.find.mockResolvedValue(createdDogs); // dogs in trip
       queryRunner.manager.update.mockResolvedValue(undefined);
       queryRunner.manager.findOneOrFail.mockResolvedValue(updatedTrip);
     });
@@ -216,16 +240,17 @@ describe('RequestsService', () => {
       expect(queryRunner.rollbackTransaction).not.toHaveBeenCalled();
     });
 
-    it('should save dogs via queryRunner manager', async () => {
+    it('should create a Requester from the TripRequest data', async () => {
       await service.approveRequest('req-1');
 
       expect(queryRunner.manager.create).toHaveBeenCalledWith(
-        Dog,
-        expect.arrayContaining([
-          expect.objectContaining({ name: 'Buddy', size: 'medium', chipId: 'CHIP001' }),
-        ]),
+        Requester,
+        expect.objectContaining({ name: 'John Doe', sourceRequestId: 'req-1' }),
       );
-      expect(queryRunner.manager.save).toHaveBeenCalledWith(Dog, expect.any(Array));
+      expect(queryRunner.manager.save).toHaveBeenCalledWith(
+        Requester,
+        expect.objectContaining({ name: 'John Doe' }),
+      );
     });
 
     it('should update trip capacity within the transaction', async () => {

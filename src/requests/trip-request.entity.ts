@@ -27,8 +27,6 @@ export class TripRequest {
   @Column({ default: 'pending' })
   status: 'pending' | 'approved' | 'rejected' | 'cancelled';
 
-  @OneToMany(() => Dog, (d) => d.request, { cascade: ['insert'], eager: true })
-  dogs: Dog[];
 
   @ManyToOne(() => Trip, (trip) => trip.requests, { onDelete: 'SET NULL', nullable: true })
   trip: Trip;
@@ -39,4 +37,7 @@ export class TripRequest {
 
   @Column({ type: 'text', nullable: true })
   adminNote: string | null;
+
+  @OneToMany(() => Dog, (dog) => dog.request)
+  dogs!: Dog[];
 }

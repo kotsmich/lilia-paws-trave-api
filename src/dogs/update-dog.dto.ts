@@ -1,17 +1,22 @@
-import { IsString, IsIn, IsNumber, IsOptional, IsEmail, IsUUID, Min } from 'class-validator';
+import { IsString, IsIn, IsNumber, IsOptional, IsUUID, Min, ValidateIf } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class UpdateDogDto {
   @IsOptional()
   @IsString()
   name?: string;
 
+  @Transform(({ value }) => value === '' ? null : value)
   @IsOptional()
+  @ValidateIf(o => o.size != null)
   @IsIn(['small', 'medium', 'large'])
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'large' | null;
 
+  @Transform(({ value }) => value === '' ? null : value)
   @IsOptional()
+  @ValidateIf(o => o.gender != null)
   @IsIn(['male', 'female'])
-  gender?: 'male' | 'female';
+  gender?: 'male' | 'female' | null;
 
   @IsOptional()
   @IsNumber()
@@ -35,20 +40,8 @@ export class UpdateDogDto {
   notes?: string;
 
   @IsOptional()
-  @IsString()
-  requesterName?: string;
-
-  @IsOptional()
-  @IsEmail()
-  requesterEmail?: string;
-
-  @IsOptional()
-  @IsString()
-  requesterPhone?: string;
-
-  @IsOptional()
   @IsUUID()
-  requestId?: string | null;
+  requesterId?: string | null;
 
   @IsOptional()
   @IsString()

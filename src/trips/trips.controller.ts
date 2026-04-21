@@ -75,7 +75,7 @@ export class TripsController {
   @UseGuards(JwtAuthGuard)
   @Post(':id/dogs/bulk')
   async addDogs(@Param('id') id: string, @Body() body: BulkCreateDogDto): Promise<Dog[]> {
-    const dogs = await this.dogsService.createMany(id, body.dogs);
+    const dogs = await this.dogsService.createMany(id, body);
     await this.tripsService.recalculateSpotsAfterDogChange(id);
     return dogs;
   }

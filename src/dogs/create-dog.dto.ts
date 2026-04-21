@@ -1,22 +1,26 @@
-import { IsString, IsIn, IsNumber, IsOptional, IsEmail, IsUUID, Min, Matches } from 'class-validator';
+import { IsString, IsIn, IsNumber, IsOptional, IsUUID, Min, Matches } from 'class-validator';
 
 export class CreateDogDto {
   @IsString()
   name: string;
 
+  @IsOptional()
   @IsIn(['small', 'medium', 'large'])
-  size: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'large' | null;
 
+  @IsOptional()
   @IsIn(['male', 'female'])
-  gender: 'male' | 'female';
+  gender?: 'male' | 'female' | null;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  age: number;
+  age?: number | null;
 
+  @IsOptional()
   @IsString()
   @Matches(/^\d{15}$/)
-  chipId: string;
+  chipId?: string | null;
 
   @IsString()
   pickupLocation: string;
@@ -28,22 +32,12 @@ export class CreateDogDto {
   @IsString()
   notes?: string;
 
-  @IsOptional()
-  @IsString()
-  requesterName?: string;
-
-  @IsOptional()
-  @IsEmail()
-  requesterEmail?: string;
-
-  @IsOptional()
-  @IsString()
-  requesterPhone?: string;
-
+  /** ID of an existing Requester — used when assigning dog to an already-known requester. */
   @IsOptional()
   @IsUUID()
-  requestId?: string;
+  requesterId?: string;
 
+  /** Name for a brand-new requester — backend will create a Requester record and link it. */
   @IsOptional()
   @IsString()
   newRequesterName?: string;

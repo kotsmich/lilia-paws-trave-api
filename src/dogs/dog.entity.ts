@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, UpdateDateColumn, Index } from 'typeorm';
-import { Trip } from '../trips/trip.entity';
 import { TripRequest } from '../requests/trip-request.entity';
+import { Trip } from '../trips/trip.entity';
+import { Requester } from '../requesters/requester.entity';
 import { Destination } from '../trips/destination.entity';
 import { PickupLocation } from '../trips/pickup-location.entity';
 
@@ -12,18 +13,18 @@ export class Dog {
   @Column()
   name: string;
 
-  @Column()
-  size: 'small' | 'medium' | 'large';
+  @Column({ nullable: true, type: 'varchar' })
+  size: 'small' | 'medium' | 'large' | null;
 
-  @Column()
-  gender: 'male' | 'female';
+  @Column({ nullable: true, type: 'varchar' })
+  gender: 'male' | 'female' | null;
 
-  @Column()
-  age: number;
+  @Column({ nullable: true, type: 'int' })
+  age: number | null;
 
   @Index()
-  @Column()
-  chipId: string;
+  @Column({ nullable: true, type: 'varchar' })
+  chipId: string | null;
 
   @Column()
   pickupLocation: string;
@@ -60,24 +61,23 @@ export class Dog {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ type: 'text', nullable: true })
-  requesterName: string | null;
-
-  @Column({ type: 'text', nullable: true })
-  requesterEmail: string | null;
-
-  @Column({ type: 'text', nullable: true })
-  requesterPhone: string | null;
-
   @ManyToOne(() => Trip, (trip) => trip.dogs, { onDelete: 'CASCADE', nullable: true })
   trip: Trip | null;
 
   @Index()
   @Column({ nullable: true, type: 'varchar' })
-  requestId: string | null;
+  requesterId: string | null;
+
+  @ManyToOne(() => Requester, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'requesterId' })
+  requester: Requester | null;
 
   @Column({ nullable: true, type: 'varchar' })
   receiver: string | null;
+
+  @Index()
+  @Column({ nullable: true, type: 'varchar' })
+  requestId: string | null;
 
   @ManyToOne(() => TripRequest, (r) => r.dogs, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'requestId' })
