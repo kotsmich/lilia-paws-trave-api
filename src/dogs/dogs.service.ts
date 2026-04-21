@@ -121,21 +121,33 @@ export class DogsService {
 
   /** Update a dog using only whitelisted DTO fields. */
   async update(id: string, data: UpdateDogDto): Promise<Dog> {
-    const dog = await this.findOne(id);
-    if (data.name !== undefined) dog.name = data.name;
-    if (data.size !== undefined) dog.size = data.size;
-    if (data.gender !== undefined) dog.gender = data.gender;
-    if (data.age !== undefined) dog.age = data.age;
-    if (data.chipId !== undefined) dog.chipId = data.chipId;
-    if (data.pickupLocation !== undefined) dog.pickupLocation = data.pickupLocation;
-    if (data.dropLocation !== undefined) dog.dropLocation = data.dropLocation;
-    if (data.notes !== undefined) dog.notes = data.notes;
-    if (data.requesterId !== undefined) dog.requesterId = data.requesterId ?? null;
-    if (data.photoUrl !== undefined) dog.photoUrl = data.photoUrl ?? null;
-    if (data.documentUrl !== undefined) dog.documentUrl = data.documentUrl ?? null;
-    if (data.destinationId !== undefined) dog.destinationId = data.destinationId ?? null;
-    if (data.pickupLocationId !== undefined) dog.pickupLocationId = data.pickupLocationId ?? null;
-    if (data.receiver !== undefined) dog.receiver = data.receiver ?? null;
+    const { newRequesterName, ...rest } = data;
+    const dog = await this.repo.findOne({ where: { id }, relations: ['trip'] });
+    if (!dog) throw new NotFoundException('Dog not found');
+
+    if (newRequesterName?.trim()) {
+      const tripId = dog.trip?.id;
+      if (tripId) {
+        const requester = await this.createAdminRequester(tripId, newRequesterName.trim());
+        dog.requesterId = requester.id;
+      }
+    } else if (rest.requesterId !== undefined) {
+      dog.requesterId = rest.requesterId ?? null;
+    }
+
+    if (rest.name !== undefined) dog.name = rest.name;
+    if (rest.size !== undefined) dog.size = rest.size;
+    if (rest.gender !== undefined) dog.gender = rest.gender;
+    if (rest.age !== undefined) dog.age = rest.age;
+    if (rest.chipId !== undefined) dog.chipId = rest.chipId;
+    if (rest.pickupLocation !== undefined) dog.pickupLocation = rest.pickupLocation;
+    if (rest.dropLocation !== undefined) dog.dropLocation = rest.dropLocation;
+    if (rest.notes !== undefined) dog.notes = rest.notes;
+    if (rest.photoUrl !== undefined) dog.photoUrl = rest.photoUrl ?? null;
+    if (rest.documentUrl !== undefined) dog.documentUrl = rest.documentUrl ?? null;
+    if (rest.destinationId !== undefined) dog.destinationId = rest.destinationId ?? null;
+    if (rest.pickupLocationId !== undefined) dog.pickupLocationId = rest.pickupLocationId ?? null;
+    if (rest.receiver !== undefined) dog.receiver = rest.receiver ?? null;
     return this.repo.save(dog);
   }
 }

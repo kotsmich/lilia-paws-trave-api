@@ -45,6 +45,10 @@ export class UpdateDogDto {
 
   @IsOptional()
   @IsString()
+  newRequesterName?: string;
+
+  @IsOptional()
+  @IsString()
   photoUrl?: string | null;
 
   @IsOptional()
