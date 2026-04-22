@@ -27,9 +27,9 @@ export class DogDto {
   @Min(0)
   age!: number;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  chipId!: string;
+  chipId?: string;
 
   @IsString()
   @IsNotEmpty()
