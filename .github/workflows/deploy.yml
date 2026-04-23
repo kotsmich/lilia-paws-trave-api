@@ -18,4 +18,5 @@ jobs:
             cd /var/www/lilia-paws-back
             git fetch origin
             git reset --hard origin/main
-            docker compose up -d --build --force-recreate api
+            docker compose build api
+            docker compose up -d --no-build --force-recreate api
