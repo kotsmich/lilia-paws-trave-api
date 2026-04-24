@@ -10,6 +10,7 @@ import {
   IsNumber,
   Min,
   IsOptional,
+  ArrayUnique,
 } from 'class-validator';
 
 export class DogDto {
@@ -17,8 +18,19 @@ export class DogDto {
   @IsNotEmpty()
   name!: string;
 
+  @IsOptional()
   @IsIn(['small', 'medium', 'large'])
-  size!: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'large' | null;
+
+  @IsOptional()
+  @IsIn(['under10', '10to25', 'over30'])
+  height?: 'under10' | '10to25' | 'over30' | null;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsIn(['friendly', 'aggressive', 'fearful', 'anxious', 'calm'], { each: true })
+  behaviors?: ('friendly' | 'aggressive' | 'fearful' | 'anxious' | 'calm')[] | null;
 
   @IsIn(['male', 'female'])
   gender!: 'male' | 'female';

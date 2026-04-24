@@ -1,4 +1,4 @@
-import { IsString, IsIn, IsNumber, IsOptional, IsUUID, Min, Matches } from 'class-validator';
+import { IsString, IsIn, IsNumber, IsOptional, IsUUID, Min, Matches, IsArray, ArrayUnique } from 'class-validator';
 
 export class CreateDogDto {
   @IsString()
@@ -7,6 +7,16 @@ export class CreateDogDto {
   @IsOptional()
   @IsIn(['small', 'medium', 'large'])
   size?: 'small' | 'medium' | 'large' | null;
+
+  @IsOptional()
+  @IsIn(['under10', '10to25', 'over30'])
+  height?: 'under10' | '10to25' | 'over30' | null;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsIn(['friendly', 'aggressive', 'fearful', 'anxious', 'calm'], { each: true })
+  behaviors?: ('friendly' | 'aggressive' | 'fearful' | 'anxious' | 'calm')[] | null;
 
   @IsOptional()
   @IsIn(['male', 'female'])

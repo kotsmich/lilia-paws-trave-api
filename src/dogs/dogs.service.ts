@@ -137,6 +137,8 @@ export class DogsService {
 
     if (rest.name !== undefined) dog.name = rest.name;
     if (rest.size !== undefined) dog.size = rest.size;
+    if (rest.height !== undefined) dog.height = rest.height ?? null;
+    if (rest.behaviors !== undefined) dog.behaviors = rest.behaviors && rest.behaviors.length > 0 ? rest.behaviors : null;
     if (rest.gender !== undefined) dog.gender = rest.gender;
     if (rest.age !== undefined) dog.age = rest.age;
     if (rest.chipId !== undefined) dog.chipId = rest.chipId;

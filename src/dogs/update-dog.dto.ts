@@ -1,4 +1,4 @@
-import { IsString, IsIn, IsNumber, IsOptional, IsUUID, Min, ValidateIf } from 'class-validator';
+import { IsString, IsIn, IsNumber, IsOptional, IsUUID, Min, ValidateIf, IsArray, ArrayUnique } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class UpdateDogDto {
@@ -11,6 +11,18 @@ export class UpdateDogDto {
   @ValidateIf(o => o.size != null)
   @IsIn(['small', 'medium', 'large'])
   size?: 'small' | 'medium' | 'large' | null;
+
+  @Transform(({ value }) => value === '' ? null : value)
+  @IsOptional()
+  @ValidateIf(o => o.height != null)
+  @IsIn(['under10', '10to25', 'over30'])
+  height?: 'under10' | '10to25' | 'over30' | null;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsIn(['friendly', 'aggressive', 'fearful', 'anxious', 'calm'], { each: true })
+  behaviors?: ('friendly' | 'aggressive' | 'fearful' | 'anxious' | 'calm')[] | null;
 
   @Transform(({ value }) => value === '' ? null : value)
   @IsOptional()

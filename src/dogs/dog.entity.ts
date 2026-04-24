@@ -17,6 +17,12 @@ export class Dog {
   size: 'small' | 'medium' | 'large' | null;
 
   @Column({ nullable: true, type: 'varchar' })
+  height: 'under10' | '10to25' | 'over30' | null;
+
+  @Column({ nullable: true, type: 'simple-array' })
+  behaviors: ('friendly' | 'aggressive' | 'fearful' | 'anxious' | 'calm')[] | null;
+
+  @Column({ nullable: true, type: 'varchar' })
   gender: 'male' | 'female' | null;
 
   @Column({ nullable: true, type: 'int' })

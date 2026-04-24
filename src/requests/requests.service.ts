@@ -54,6 +54,8 @@ export class RequestsService {
       data.dogs.map((d) => ({
         name: d.name,
         size: d.size,
+        height: d.height ?? null,
+        behaviors: d.behaviors && d.behaviors.length > 0 ? d.behaviors : null,
         gender: d.gender,
         age: d.age,
         chipId: d.chipId,
