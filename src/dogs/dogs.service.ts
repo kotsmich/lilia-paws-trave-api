@@ -150,6 +150,7 @@ export class DogsService {
     if (rest.destinationId !== undefined) dog.destinationId = rest.destinationId ?? null;
     if (rest.pickupLocationId !== undefined) dog.pickupLocationId = rest.pickupLocationId ?? null;
     if (rest.receiver !== undefined) dog.receiver = rest.receiver ?? null;
+    if (rest.receiverPhone !== undefined) dog.receiverPhone = rest.receiverPhone ?? null;
     return this.repo.save(dog);
   }
 }

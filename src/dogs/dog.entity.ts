@@ -81,6 +81,9 @@ export class Dog {
   @Column({ nullable: true, type: 'varchar' })
   receiver: string | null;
 
+  @Column({ nullable: true, type: 'varchar' })
+  receiverPhone: string | null;
+
   @Index()
   @Column({ nullable: true, type: 'varchar' })
   requestId: string | null;

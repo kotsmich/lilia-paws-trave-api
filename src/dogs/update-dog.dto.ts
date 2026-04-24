@@ -78,4 +78,8 @@ export class UpdateDogDto {
   @IsOptional()
   @IsString()
   receiver?: string | null;
+
+  @IsOptional()
+  @IsString()
+  receiverPhone?: string | null;
 }

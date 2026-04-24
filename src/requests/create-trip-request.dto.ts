@@ -70,6 +70,10 @@ export class DogDto {
   @IsOptional()
   @IsString()
   receiver?: string;
+
+  @IsOptional()
+  @IsString()
+  receiverPhone?: string;
 }
 
 export class CreateTripRequestDto {

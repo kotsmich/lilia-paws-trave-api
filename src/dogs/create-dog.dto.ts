@@ -63,4 +63,8 @@ export class CreateDogDto {
   @IsOptional()
   @IsString()
   receiver?: string | null;
+
+  @IsOptional()
+  @IsString()
+  receiverPhone?: string | null;
 }
