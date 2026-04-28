@@ -37,13 +37,25 @@ export const imageFileFilter = (
   cb(null, true);
 };
 
+const ALLOWED_DOCUMENT_EXTENSIONS = new Set([
+  '.pdf',
+  '.jpg', '.jpeg', '.png',
+  '.doc', '.docx',
+  '.odt',
+  '.rtf',
+  '.txt',
+]);
+
 export const documentFileFilter = (
   _req: Express.Request,
   file: Express.Multer.File,
   cb: (error: Error | null, acceptFile: boolean) => void,
 ): void => {
-  if (!file.mimetype.match(/^(image\/(jpg|jpeg|png)|application\/pdf)$/)) {
-    return cb(new BadRequestException('Only PDF or image files allowed'), false);
+  // Browsers report inconsistent MIME types for office formats (.odt often arrives
+  // as application/octet-stream), so authoritative check is by file extension.
+  const ext = extname(file.originalname).toLowerCase();
+  if (!ALLOWED_DOCUMENT_EXTENSIONS.has(ext)) {
+    return cb(new BadRequestException('Unsupported document format'), false);
   }
   cb(null, true);
 };
