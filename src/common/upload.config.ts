@@ -26,6 +26,14 @@ export const dogTempStorage = diskStorage({
   },
 });
 
+export const tripResultPhotoStorage = diskStorage({
+  destination: './uploads/trip-results',
+  filename: (_req, file, cb) => {
+    const uniqueName = `${randomUUID()}-${Date.now()}${extname(file.originalname)}`;
+    cb(null, uniqueName);
+  },
+});
+
 export const imageFileFilter = (
   _req: Express.Request,
   file: Express.Multer.File,

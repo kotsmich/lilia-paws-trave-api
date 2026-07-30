@@ -9,6 +9,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import * as Joi from 'joi';
 import { join } from 'path';
 import { TripsModule } from './trips/trips.module';
+import { TripResultsModule } from './trip-results/trip-results.module';
 import { DogsModule } from './dogs/dogs.module';
 import { RequestsModule } from './requests/requests.module';
 import { ContactModule } from './contact/contact.module';
@@ -92,6 +93,7 @@ const HandlebarsAdapter = require('@nestjs-modules/mailer/adapters/handlebars.ad
     GatewayModule,
     AuthModule,
     TripsModule,
+    TripResultsModule,
     DogsModule,
     RequestsModule,
     ContactModule,
