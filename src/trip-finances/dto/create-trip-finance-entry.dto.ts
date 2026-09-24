@@ -22,10 +22,36 @@ export class CreateTripFinanceEntryDto {
   @MaxLength(120)
   name!: string;
 
+  /** For an income, what the payer owes in total. */
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   amount!: number;
+
+  /** Incomes only: how much of the total arrived by each method. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  paidCash?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  paidPaypal?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  paidRevolut?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  paidCredia?: number;
 
   @IsOptional()
   @IsString()
